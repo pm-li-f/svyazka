@@ -1,0 +1,13 @@
+vision: Продукт, который окупает себя
+cycle: executing
+target: beta
+weather:
+  stage: storming
+  note: Спорим о правилах ревью за агентами
+  at: 2026-11-10
+camps:
+  - {id: base, name: База, phase: done}
+  - {id: mvp, name: MVP, phase: done, note: Пройден. Уроки записаны в журнал.}
+  - {id: beta, name: Бета-релиз, phase: current, note: "4 недели, один перевал, один шторм"}
+  - {id: paying, name: Первые платящие, phase: planned, note: Маршрут не проложен. Нужна вторая связка.}
+  - {id: breakeven, name: Окупаемость, phase: idea}

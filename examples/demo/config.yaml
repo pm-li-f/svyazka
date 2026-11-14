@@ -1,0 +1,15 @@
+# Настройки игры. Числа — прикидки, калибруются после пары недель игры.
+ttl_days: 14              # срок годности контекста о человеке
+attention:
+  cap: 10                 # потолок дневного бюджета
+  over_usual: 2           # не выше обычного плюс столько
+  window_days: 14         # за сколько дней считается «обычное»
+action_costs:
+  read-sheet: 1
+  resolve-signal: 1
+  one-on-one: 2
+  route-block: 3
+navigator:
+  provider: anthropic     # anthropic | moonshotai | alibaba
+  model: claude-sonnet-5-5
+  cloud_layers: [team, pair, me]   # в первой версии в облако может уходить всё
