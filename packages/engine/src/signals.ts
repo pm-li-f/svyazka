@@ -1,4 +1,5 @@
 import type { Game } from '@svyazka/core';
+import { capStreak } from './attention.js';
 import { freshness } from './freshness.js';
 import { raciLint } from './raci.js';
 import { skillCoverage } from './skills.js';
@@ -7,7 +8,7 @@ export type Severity = 'crit' | 'warn' | 'lint' | 'info';
 
 export interface Signal {
   severity: Severity;
-  /** Машинный код: spof, stale-context, stale-sheet, raci, weather. */
+  /** Машинный код: spof, stale-context, stale-sheet, raci, attention, weather. */
   code: string;
   /** О ком или о чём сигнал: id человека, навыка или перехода. */
   target: string;
@@ -94,10 +95,21 @@ export function signals(game: Game, today: string): Signal[] {
           severity: 'lint',
           code: 'raci',
           target: r.actor,
-          text: `${name(r.actor)} отвечает за ${r.tasks.length} перехода сразу: ${r.tasks.join(', ')}.`,
+          text: `${name(r.actor)} отвечает сразу в ${r.tasks.length} переходах: ${r.tasks.join(', ')}.`,
         });
         break;
     }
+  }
+
+  const streak = capStreak(game, today);
+  if (streak >= game.config.attention.cap_streak) {
+    const lead = game.people.find((x) => x.is_lead);
+    out.push({
+      severity: 'warn',
+      code: 'attention',
+      target: lead?.id ?? 'lead',
+      text: `Потолок внимания — уже ${streak}-й ход подряд. Это сигнал на тебя самого.`,
+    });
   }
 
   const w = game.map.weather;

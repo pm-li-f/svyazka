@@ -4,6 +4,7 @@ attention:
   cap: 10                 # потолок дневного бюджета
   over_usual: 2           # не выше обычного плюс столько
   window_days: 14         # за сколько дней считается «обычное»
+  cap_streak: 3           # столько ходов подряд на потолке — сигнал на тебя самого
 action_costs:
   read-sheet: 1
   resolve-signal: 1
@@ -26,6 +27,10 @@ labels:                   # подписи для людей
   process-vision: Видение процессов
   product-taste: Продуктовый вкус
   feedback: Обратная связь
+  read-sheet: прочитать лист
+  resolve-signal: разобрать сигнал
+  one-on-one: провести 1on1
+  route-block: поработать над маршрутом
 navigator:
   provider: anthropic     # anthropic | moonshotai | alibaba
   model: claude-sonnet-5-5

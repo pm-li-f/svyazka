@@ -101,7 +101,7 @@ export function renderRaci(game: Game, p: Paint = plain): string {
       case 'agent-accountable':
         return p.yellow('✗') + ` ${f.task}: отвечает агент (${f.actor})`;
       case 'accountable-overload':
-        return p.yellow('!') + ` ${f.actor} отвечает за ${f.tasks.length} перехода сразу`;
+        return p.yellow('!') + ` ${f.actor} отвечает сразу в ${f.tasks.length} переходах`;
     }
   });
 

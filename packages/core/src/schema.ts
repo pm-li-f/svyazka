@@ -188,8 +188,10 @@ export const Turn = z.strictObject({
     .default([]),
   /** Журнал решений: что решил и почему. */
   decisions: z.array(z.string()).default([]),
-  /** До чего не дошли руки. */
+  /** До чего не дошли руки. Заполняется при закрытии хода. */
   untouched: z.array(z.string()).default([]),
+  /** Ход закрыт: действия больше не записываются. */
+  closed: z.boolean().default(false),
 });
 
 export const Layer = z.enum(['team', 'pair', 'me']);
@@ -201,6 +203,8 @@ export const Config = z.strictObject({
     cap: z.number().int().min(1).max(10),
     over_usual: z.number().int().min(0),
     window_days: z.number().int().min(1),
+    /** Сколько ходов подряд на потолке — уже сигнал на самого руководителя. */
+    cap_streak: z.number().int().min(2),
   }),
   action_costs: z.record(z.string(), z.number().int().min(1).max(3)),
   raci: z.strictObject({

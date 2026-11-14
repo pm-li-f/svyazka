@@ -44,7 +44,7 @@ describe('RACI', () => {
     expect(row(out, 'deps-update')).toContain('R A');
     expect(out).toContain('✗ deps-update: отвечает агент (reviewer)');
     expect(out).toContain('✗ second-rope: никто не ведёт');
-    expect(out).toContain('! anya отвечает за 3 перехода сразу');
+    expect(out).toContain('! anya отвечает сразу в 3 переходах');
   });
 });
 
