@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Запуск «Связки» из исходников: ./bin/sv roster --dir examples/demo
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec "$ROOT/node_modules/.bin/tsx" "$ROOT/packages/cli/src/main.ts" "$@"

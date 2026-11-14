@@ -13,6 +13,19 @@ raci:
   accountable_max: 2      # за сколько активных переходов можно отвечать одновременно
 signals:
   load_crit: 85           # нагрузка, с которой единственный держатель навыка — критический сигнал
+labels:                   # подписи для людей
+  databases: Базы данных
+  hardware: Железо
+  architecture: Архитектура
+  interfaces: Интерфейсы
+  infrastructure: Инфраструктура
+  agents: Работа с агентами
+  verification: Проверка результата
+  data-metrics: Данные и метрики
+  systems-thinking: Системное мышление
+  process-vision: Видение процессов
+  product-taste: Продуктовый вкус
+  feedback: Обратная связь
 navigator:
   provider: anthropic     # anthropic | moonshotai | alibaba
   model: claude-sonnet-5-5

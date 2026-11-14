@@ -25,11 +25,12 @@ export function signals(game: Game, today: string): Signal[] {
   const out: Signal[] = [];
   const name = (id: string) =>
     game.people.find((p) => p.id === id)?.name ?? game.agents.find((a) => a.id === id)?.name ?? id;
+  const label = (id: string) => game.config.labels[id] ?? id;
   const fresh = new Map(freshness(game, today).map((f) => [f.person, f]));
 
   for (const c of skillCoverage(game)) {
     if (c.none) {
-      out.push({ severity: 'warn', code: 'spof', target: c.skill, text: `Навык «${c.skill}» не держит никто.` });
+      out.push({ severity: 'warn', code: 'spof', target: c.skill, text: `Навык «${label(c.skill)}» не держит никто.` });
       continue;
     }
     if (!c.single) continue;
@@ -43,7 +44,7 @@ export function signals(game: Game, today: string): Signal[] {
       severity: crit ? 'crit' : 'warn',
       code: 'spof',
       target: c.skill,
-      text: `Навык «${c.skill}» держит один человек — ${name(holder)}.${tail}`,
+      text: `Навык «${label(c.skill)}» держит один человек — ${name(holder)}.${tail}`,
     });
   }
 

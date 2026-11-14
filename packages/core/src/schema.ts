@@ -211,6 +211,8 @@ export const Config = z.strictObject({
     /** Нагрузка, начиная с которой единственный держатель навыка — критический сигнал. */
     load_crit: z.number().int().min(1).max(100),
   }),
+  /** Названия для людей: id навыка или качества → подпись по-русски. Без подписи показывается id. */
+  labels: z.record(z.string(), z.string()).default({}),
   navigator: z.strictObject({
     provider: z.enum(['anthropic', 'moonshotai', 'alibaba']),
     model: z.string().min(1),

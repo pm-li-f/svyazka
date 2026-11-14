@@ -10,5 +10,5 @@ raci:
   A: anya
   C: [mark]
   I: [you]
-note: Идёт, день 2
+note: День 2
 ---
