@@ -9,6 +9,10 @@ action_costs:
   resolve-signal: 1
   one-on-one: 2
   route-block: 3
+raci:
+  accountable_max: 2      # за сколько активных переходов можно отвечать одновременно
+signals:
+  load_crit: 85           # нагрузка, с которой единственный держатель навыка — критический сигнал
 navigator:
   provider: anthropic     # anthropic | moonshotai | alibaba
   model: claude-sonnet-5-5

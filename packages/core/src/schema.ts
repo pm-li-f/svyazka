@@ -203,6 +203,14 @@ export const Config = z.strictObject({
     window_days: z.number().int().min(1),
   }),
   action_costs: z.record(z.string(), z.number().int().min(1).max(3)),
+  raci: z.strictObject({
+    /** За сколько активных переходов один человек может отвечать, прежде чем это станет сигналом. */
+    accountable_max: z.number().int().min(1),
+  }),
+  signals: z.strictObject({
+    /** Нагрузка, начиная с которой единственный держатель навыка — критический сигнал. */
+    load_crit: z.number().int().min(1).max(100),
+  }),
   navigator: z.strictObject({
     provider: z.enum(['anthropic', 'moonshotai', 'alibaba']),
     model: z.string().min(1),

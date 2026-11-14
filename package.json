@@ -6,10 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "tsc -p packages/core --noEmit",
+    "typecheck": "tsc -p packages/core --noEmit && tsc -p packages/engine --noEmit",
     "test": "vitest run",
     "validate": "tsx packages/core/src/validate-cli.ts",
-    "check": "npm run typecheck && npm test && npm run validate -- examples/demo"
+    "check": "npm run typecheck && npm test && npm run validate -- examples/demo",
+    "signals": "tsx packages/engine/src/signals-cli.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
