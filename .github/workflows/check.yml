@@ -21,6 +21,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      # Команда sv после npm link — в той оболочке, которая на этой ОС по умолчанию (на Windows это PowerShell).
+      - name: npm link
+        run: |
+          npm link
+          sv --help
       # Те же шаги, что в docs/kak-zapustit.md: команда запускается и новая папка игры читается.
       - name: smoke
         shell: bash
@@ -34,3 +39,12 @@ jobs:
           node bin/sv.mjs sheet anya --dir "$RUNNER_TEMP/game" --no-color
           node bin/sv.mjs turn end --dir "$RUNNER_TEMP/game"
           git -C "$RUNNER_TEMP/game" log --format=%s
+      - name: web
+        shell: bash
+        run: |
+          node bin/sv.mjs web --dir "$RUNNER_TEMP/game" --port 4199 &
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:4199/api/state > state.json && break; sleep 1; done
+          node -e "const s = JSON.parse(require('fs').readFileSync('state.json', 'utf8')); if (s.roster.length !== 2) throw new Error('roster'); console.log('state ok:', s.roster.map((r) => r.id).join(', '))"
+          curl -fsS http://127.0.0.1:4199/ | grep -q 'id="root"'
+          curl -fsS http://127.0.0.1:4199/src/main.tsx > /dev/null
+          echo "web ok"

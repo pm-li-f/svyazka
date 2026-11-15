@@ -6,6 +6,8 @@
 
 ## Запуск
 
+Подробная пошаговая инструкция для Windows, macOS и Linux — в [docs/kak-zapustit.md](docs/kak-zapustit.md).
+
 Нужен Node.js 22 или новее.
 
 ```bash
