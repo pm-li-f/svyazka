@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import type { z } from 'zod';
 import {
@@ -61,7 +61,8 @@ function listDirs(dir: string): string[] {
  */
 export function loadGame(root: string): Game {
   const issues: Issue[] = [];
-  const rel = (p: string) => relative(root, p) || p;
+  // В сообщениях путь всегда через «/», как он записан в документации, на любой ОС.
+  const rel = (p: string) => (relative(root, p) || p).split(sep).join('/');
 
   function read<S extends z.ZodType>(path: string, schema: S): z.infer<S> | undefined {
     if (!existsSync(path)) {

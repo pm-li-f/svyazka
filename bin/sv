@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Запуск «Связки» из исходников: ./bin/sv roster --dir examples/demo
+# Короткий запуск на macOS и Linux: ./bin/sv roster --dir examples/demo
+# На Windows используй `node bin/sv.mjs ...` или команду `sv` после `npm link`.
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-exec "$ROOT/node_modules/.bin/tsx" "$ROOT/packages/cli/src/main.ts" "$@"
+exec node "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/sv.mjs" "$@"

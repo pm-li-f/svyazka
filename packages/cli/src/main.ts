@@ -2,14 +2,19 @@ import { resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { GameLoadError, Layer, loadGame } from '@svyazka/core';
-import { localToday } from '@svyazka/ops';
+import { InitError, localToday } from '@svyazka/ops';
+import { askInit, parsePerson, runInit } from './init.js';
 import { makePaint } from './format.js';
 import { renderRaci, renderRoster, renderSheet, renderSignals, renderSkills } from './render.js';
 import { act, budgetHint, chargeSheetRead, decide, oneOnOne, turnEnd, turnShow, turnStart } from './turn.js';
 
 const HELP = `sv — «Связка» в терминале
 
+Начать
+  sv init <путь>            создать новую папку игры: спросит про тебя и команду
+
 Смотреть
+  sv web                    веб-интерфейс на http://127.0.0.1:4173
   sv roster                 отряд: люди и агенты, давность контекста
   sv signals                сигналы хода
   sv raci                   матрица RACI и её нарушения
@@ -32,7 +37,14 @@ const HELP = `sv — «Связка» в терминале
   --layer <слой>            для sheet: до какого слоя показывать — team, pair или me
   --peek                    для sheet: посмотреть, не списывая внимание
   --no-commit               для turn end: не делать коммит
-  --no-color                без цвета`;
+  --no-color                без цвета
+
+Для sv init без вопросов
+  --yes                     не спрашивать, взять значения из флагов
+  --lead-name "<имя>"       как тебя зовут
+  --person "<id:Имя:роль>"  человек в команде; флаг можно повторять
+  --camp "<название>"       ближайшая веха
+  --no-git                  не создавать репозиторий`;
 
 function fail(message: string, code = 2): never {
   console.error(message);
@@ -50,6 +62,12 @@ const { values, positionals } = parseArgs({
     peek: { type: 'boolean' },
     'no-commit': { type: 'boolean' },
     'no-color': { type: 'boolean' },
+    yes: { type: 'boolean' },
+    'lead-name': { type: 'string' },
+    'lead-role': { type: 'string' },
+    person: { type: 'string', multiple: true },
+    camp: { type: 'string' },
+    'no-git': { type: 'boolean' },
     help: { type: 'boolean', short: 'h' },
   },
 });
@@ -88,6 +106,19 @@ async function askBudget(): Promise<number | undefined> {
 }
 
 try {
+  if (command === 'init') {
+    if (!arg) fail('sv init <путь>: укажи, где создать папку игры, например sv init ~/svyazka-game');
+    const base = {
+      today,
+      lead: { id: 'you', name: values['lead-name'] ?? 'Ты', role: values['lead-role'] ?? 'cpto' },
+      people: (values.person ?? []).map(parsePerson),
+      camp: values.camp ?? 'Первый лагерь',
+      git: !values['no-git'],
+    };
+    const opts = values.yes || !process.stdin.isTTY ? base : await askInit(base);
+    console.log(runInit(resolve(arg), opts));
+    process.exit(0);
+  }
   switch (command) {
     case 'roster':
       console.log(renderRoster(loadGame(dir), today, paint));
@@ -133,7 +164,7 @@ try {
       fail(`неизвестная команда «${command}»\n\n${HELP}`);
   }
 } catch (e) {
-  if (e instanceof GameLoadError) fail(e.message, 1);
+  if (e instanceof GameLoadError || e instanceof InitError) fail(e.message, 1);
   if (e instanceof Error) fail(e.message, 1);
   throw e;
 }

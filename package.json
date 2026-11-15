@@ -11,13 +11,16 @@
     "test": "vitest run",
     "validate": "tsx packages/core/src/validate-cli.ts",
     "check": "npm run typecheck && npm test && npm run validate -- examples/demo",
-    "sv": "tsx packages/cli/src/main.ts",
-    "web": "tsx apps/web/server/main.ts"
+    "sv": "node bin/sv.mjs",
+    "web": "node bin/sv.mjs web"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^5.1.0"
+  },
+  "bin": {
+    "sv": "bin/sv.mjs"
   }
 }

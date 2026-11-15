@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { addJournalEntry, loadGame, saveTurn, setLast1on1, type Game, type Person, type Turn } from '@svyazka/core';
 import {
   addDecision,
@@ -23,6 +24,8 @@ export function localToday(now: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
+
+export { initGame, InitError, type InitOptions, type InitPerson } from './init.js';
 
 export interface TurnResult {
   game: Game;
@@ -93,6 +96,15 @@ export function chargeSheetRead(dir: string, today: string, id: string): (TurnRe
   return { game, turn: next, cost: next.actions.at(-1)?.cost ?? 0 };
 }
 
+/** Один и тот же каталог? Git на Windows отдаёт путь через «/» и с другим регистром буквы диска. */
+function samePath(a: string, b: string): boolean {
+  const norm = (p: string) => {
+    const real = realpathSync.native(resolve(p));
+    return process.platform === 'win32' ? real.toLowerCase() : real;
+  };
+  return norm(a) === norm(b);
+}
+
 function git(dir: string, args: string[]): string {
   return execFileSync('git', args, { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] }).toString();
 }
@@ -105,7 +117,7 @@ function commitTurn(dir: string, date: string): string {
   } catch {
     return 'Папка игры не в git: коммит пропущен.';
   }
-  if (realpathSync(top) !== realpathSync(dir)) {
+  if (!samePath(top, dir)) {
     return 'Папка игры лежит внутри другого репозитория: коммит пропущен, чтобы не задеть чужую историю.';
   }
   try {
