@@ -3,14 +3,16 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "typecheck": "tsc -p packages/core --noEmit && tsc -p packages/engine --noEmit && tsc -p packages/cli --noEmit",
+    "typecheck": "tsc -p packages/core --noEmit && tsc -p packages/engine --noEmit && tsc -p packages/ops --noEmit && tsc -p packages/cli --noEmit && tsc -p apps/web",
     "test": "vitest run",
     "validate": "tsx packages/core/src/validate-cli.ts",
     "check": "npm run typecheck && npm test && npm run validate -- examples/demo",
-    "sv": "tsx packages/cli/src/main.ts"
+    "sv": "tsx packages/cli/src/main.ts",
+    "web": "tsx apps/web/server/main.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

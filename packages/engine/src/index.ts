@@ -5,4 +5,5 @@ export { raciLint, type RaciFinding } from './raci.js';
 export { roster, type RosterRow, type RosterStatus } from './roster.js';
 export { skillCoverage, type SkillCoverage } from './skills.js';
 export { signals, type Signal, type Severity } from './signals.js';
+export { raciMatrix, sheetView, skillMatrix, type RaciMatrix, type SheetView, type SkillMatrix } from './views.js';
 export { addDecision, currentTurn, endTurn, hasAction, recordAction, startTurn, TurnError } from './turn.js';

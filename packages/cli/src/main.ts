@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { GameLoadError, Layer, loadGame } from '@svyazka/core';
+import { localToday } from '@svyazka/ops';
 import { makePaint } from './format.js';
 import { renderRaci, renderRoster, renderSheet, renderSignals, renderSkills } from './render.js';
 import { act, budgetHint, chargeSheetRead, decide, oneOnOne, turnEnd, turnShow, turnStart } from './turn.js';
@@ -59,7 +60,7 @@ if (values.help || !command) {
   process.exit(command || values.help ? 0 : 2);
 }
 
-const today = values.today ?? new Date().toISOString().slice(0, 10);
+const today = values.today ?? localToday();
 if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) fail('--today ждёт дату в формате ГГГГ-ММ-ДД');
 
 const layer = Layer.safeParse(values.layer ?? 'me');
