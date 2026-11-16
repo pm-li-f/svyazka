@@ -4,6 +4,7 @@ import {
   attentionSplit,
   budgetLimit,
   currentTurn,
+  facts,
   mapView,
   raciMatrix,
   roster,
@@ -11,6 +12,7 @@ import {
   skillMatrix,
   strategy,
   type AttentionSplit,
+  type Facts,
   type MapView,
   type RaciMatrix,
   type RosterRow,
@@ -41,6 +43,8 @@ export interface StateView {
   strategy: Strategy;
   /** Куда уходило внимание: данные о самом руководителе. */
   attention: AttentionSplit;
+  /** Снимок для игрового слоя: по двум таким снимкам страница находит события для заставок и эффектов. */
+  facts: Facts;
   /** Модели штурмана. `ready` — ключ найден; сам ключ на страницу не уходит. */
   navigator: { default: string; models: { name: string; provider: string; model: string; layers: Layer[]; keyVar: string; ready: boolean }[] };
 }
@@ -75,6 +79,7 @@ export function buildState(dir: string, today: string, keys: Keys = readKeys()):
     terrain,
     strategy: strategy(game, terrain),
     attention: attentionSplit(game, today),
+    facts: facts(game, today),
     navigator: {
       default: game.config.navigator.default,
       models: listModels(game.config).map((m) => ({

@@ -25,3 +25,17 @@ export {
   type MapView,
   type Strategy,
 } from './map.js';
+export {
+  DEFAULT_SETTINGS,
+  events,
+  isSplash,
+  plan,
+  RARE,
+  SPLASH_MS,
+  type EffectEvent,
+  type Facts,
+  type GameEvent,
+  type GameSettings,
+  type SplashEvent,
+} from './events.js';
+export { facts } from './facts.js';
