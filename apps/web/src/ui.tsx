@@ -24,12 +24,25 @@ export const LAYER_NAME: Record<Layer, string> = { team: 'видит отряд'
 /** Запускает действие: показывает ошибку человеку и перечитывает состояние. */
 export type Run = (action: () => Promise<unknown>) => Promise<boolean>;
 
-export function Panel({ title, children, className }: { title: ReactNode; children: ReactNode; className?: string }) {
+/** `block` — устойчивое имя блока: по нему его находят тесты и сборка руководства. */
+export function Panel({ title, children, className, block }: { title: ReactNode; children: ReactNode; className?: string; block?: string }) {
   return (
-    <section className={`panel ${className ?? ''}`}>
+    <section className={`panel ${className ?? ''}`} data-block={block}>
       <h2 className="panel-title">{title}</h2>
       {children}
     </section>
+  );
+}
+
+/**
+ * Длинный список в окне с прокруткой: то, что стоит ниже, не уезжает за край экрана.
+ * Окно получает фокус с клавиатуры, чтобы его можно было листать стрелками.
+ */
+export function Scroll({ label, size, children }: { label: string; size?: 's'; children: ReactNode }) {
+  return (
+    <div className={`scroll-y ${size ?? ''}`} tabIndex={0} role="group" aria-label={label}>
+      {children}
+    </div>
   );
 }
 
@@ -107,7 +120,7 @@ export function DecisionInput({ run }: { run: Run }) {
     if (await run(() => api.decide(text))) setText('');
   };
   return (
-    <form className="cmdline" onSubmit={submit}>
+    <form className="cmdline" data-block="decision" onSubmit={submit}>
       <span className="green" aria-hidden="true">
         &gt;
       </span>

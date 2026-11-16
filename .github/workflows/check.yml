@@ -6,6 +6,24 @@ on:
   pull_request:
 
 jobs:
+  manual:
+    # Руководство игрока собирается из живой игры: если экран или правило хода изменились,
+    # а руководство нет, сборка падает и называет блок или шаг.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run manual
+      - uses: actions/upload-artifact@v4
+        with:
+          name: svyazka-manual
+          path: docs/manual/out/svyazka-manual.pdf
+          if-no-files-found: error
+
   check:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -54,7 +72,7 @@ jobs:
         run: |
           node bin/sv.mjs web --dir "$RUNNER_TEMP/game" --port 4199 &
           for i in $(seq 1 60); do curl -fsS http://127.0.0.1:4199/api/state > state.json && break; sleep 1; done
-          node -e "const s = JSON.parse(require('fs').readFileSync('state.json', 'utf8')); if (s.roster.length !== 2) throw new Error('roster'); if (s.terrain.cells.length !== s.terrain.rows) throw new Error('map'); console.log('state ok:', s.roster.map((r) => r.id).join(', '))"
+          node -e "const s = JSON.parse(require('fs').readFileSync('state.json', 'utf8')); if (s.roster.length !== 2) throw new Error('roster'); if (s.terrain.cells.length !== s.terrain.rows * s.terrain.detail) throw new Error('map'); console.log('state ok:', s.roster.map((r) => r.id).join(', '))"
           curl -fsS http://127.0.0.1:4199/ | grep -q 'id="root"'
           curl -fsS http://127.0.0.1:4199/src/main.tsx > /dev/null
           echo "web ok"

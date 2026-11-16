@@ -19,6 +19,8 @@ import { skillCoverage } from './skills.js';
 
 export const MAP_COLS = 72;
 export const MAP_ROWS = 46;
+/** Сколько клеток рельефа приходится на единицу раскладки по каждой оси: чем больше, тем мельче пиксель. */
+export const MAP_DETAIL = 2;
 
 /** Клетки рельефа и их однобуквенные коды в `MapView.cells`. */
 export const GROUND = {
@@ -78,7 +80,9 @@ export interface MapTask {
 export interface MapView {
   cols: number;
   rows: number;
-  /** Рельеф: `rows` строк по `cols` знаков, коды из `GROUND`. */
+  /** Клеток рельефа на единицу раскладки по каждой оси. Координаты точек и размеры — в единицах раскладки. */
+  detail: number;
+  /** Рельеф: `rows × detail` строк по `cols × detail` знаков, коды из `GROUND`. */
   cells: string[];
   route: MapPoint[];
   squad: {
@@ -256,9 +260,14 @@ function paintGround(route: P[], tasks: MapTask[], seed: number): string[] {
   const reach = Math.hypot(MAP_COLS, MAP_ROWS) * 0.62;
   const grid: GroundCode[][] = [];
 
-  for (let y = 0; y < MAP_ROWS; y += 1) {
+  const gridCols = MAP_COLS * MAP_DETAIL;
+  const gridRows = MAP_ROWS * MAP_DETAIL;
+  // Клетка рельефа мельче единицы раскладки: формы те же, край пятен тоньше.
+  for (let gy = 0; gy < gridRows; gy += 1) {
+    const y = gy / MAP_DETAIL;
     const row: GroundCode[] = [];
-    for (let x = 0; x < MAP_COLS; x += 1) {
+    for (let gx = 0; gx < gridCols; gx += 1) {
+      const x = gx / MAP_DETAIL;
       const height = 0.66 * (1 - clamp(Math.hypot(x - summit.x, y - summit.y) / reach, 0, 1)) + 0.34 * relief(x * 0.085, y * 0.085, seed);
       let code: GroundCode = height > 0.74 ? '^' : height > 0.62 ? ':' : height > 0.48 ? ',' : '.';
       if (height < 0.44 && relief(x * 0.06 + 40, y * 0.06 + 40, seed ^ 0x9e3779b9) < 0.3 && distanceToRoute({ x, y }, route) > 4) {
@@ -275,10 +284,12 @@ function paintGround(route: P[], tasks: MapTask[], seed: number): string[] {
     // Пятно вытянуто по горизонтали, как и подпись: его видно вокруг неё.
     const rx = r * STAMP_WIDE * 1.4;
     const ry = r * 1.4;
-    for (let y = Math.max(0, Math.floor(task.y - ry)); y <= Math.min(MAP_ROWS - 1, Math.ceil(task.y + ry)); y += 1) {
-      for (let x = Math.max(0, Math.floor(task.x - rx)); x <= Math.min(MAP_COLS - 1, Math.ceil(task.x + rx)); x += 1) {
+    for (let gy = Math.max(0, Math.floor((task.y - ry) * MAP_DETAIL)); gy <= Math.min(gridRows - 1, Math.ceil((task.y + ry) * MAP_DETAIL)); gy += 1) {
+      for (let gx = Math.max(0, Math.floor((task.x - rx) * MAP_DETAIL)); gx <= Math.min(gridCols - 1, Math.ceil((task.x + rx) * MAP_DETAIL)); gx += 1) {
+        const x = gx / MAP_DETAIL;
+        const y = gy / MAP_DETAIL;
         const d = Math.hypot((x - task.x) / STAMP_WIDE, y - task.y);
-        if (d < r * (0.7 + 0.6 * noise(x * 0.3, y * 0.3, edge))) (grid[y] as GroundCode[])[x] = STAMP[task.terrain].code;
+        if (d < r * (0.7 + 0.6 * noise(x * 0.3, y * 0.3, edge))) (grid[gy] as GroundCode[])[gx] = STAMP[task.terrain].code;
       }
     }
   }
@@ -370,6 +381,7 @@ export function mapView(game: Game, today: string): MapView {
   return {
     cols: MAP_COLS,
     rows: MAP_ROWS,
+    detail: MAP_DETAIL,
     cells: paintGround(points, tasks, seed),
     route,
     squad: { ...squad, from: fromIndex, done, total: toTarget.length },

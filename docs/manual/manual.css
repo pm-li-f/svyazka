@@ -1,0 +1,127 @@
+/* Руководство игрока: лист A4, альбомная ориентация. */
+:root {
+  --ink: #1b1f22;
+  --soft: #4a5357;
+  --muted: #7b8480;
+  --line: #d9d5c9;
+  --paper: #ffffff;
+  --card: #f3f0e8;
+  --amber: #b9821a;
+  --dark: #15181b;
+}
+
+@page { size: A4 landscape; }
+
+* { box-sizing: border-box; }
+
+html { font-size: 10.2pt; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+h1, h2, h3, h4 { line-height: 1.2; margin: 0; break-after: avoid; }
+h1 { font-size: 24pt; font-weight: 700; margin-bottom: 7mm; }
+h2 { font-size: 15pt; font-weight: 700; margin: 8mm 0 3mm; }
+h3 { font-size: 11.5pt; font-weight: 700; margin: 6mm 0 2.5mm; }
+h4 { font-size: 10.2pt; font-weight: 700; }
+.num { color: var(--amber); font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-right: 2mm; }
+
+p { margin: 0 0 2.6mm; max-width: 190mm; }
+ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; max-width: 190mm; }
+li { margin-bottom: 1.2mm; }
+strong { font-weight: 700; }
+code, pre { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; }
+code { background: var(--card); padding: 0.3mm 1.2mm; border-radius: 0.8mm; }
+pre { background: var(--dark); color: #d9dcd6; padding: 4mm 5mm; border-radius: 1.2mm; line-height: 1.35; white-space: pre; overflow: hidden; break-inside: avoid; }
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+pre.cli { font-size: 7.4pt; }
+pre.cli.small { font-size: 6.3pt; line-height: 1.22; }
+
+table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.3pt; }
+th { text-align: left; font-weight: 700; color: var(--soft); border-bottom: 0.5mm solid var(--ink); padding: 1.6mm 3mm 1.6mm 0; }
+td { vertical-align: top; border-bottom: 0.2mm solid var(--line); padding: 1.7mm 3mm 1.7mm 0; }
+tr { break-inside: avoid; }
+td.cost { white-space: nowrap; font-family: 'JetBrains Mono', monospace; color: var(--amber); }
+
+figure { margin: 0 0 3mm; break-inside: avoid; }
+figure img { display: block; max-width: 100%; height: auto; border-radius: 0.8mm; }
+figure.screen img { border: 0.3mm solid var(--dark); }
+figcaption { font-size: 8.4pt; color: var(--muted); margin-top: 1.4mm; }
+
+/* обложка */
+.cover {
+  height: 184mm;
+  margin: -1mm;
+  padding: 26mm 22mm;
+  background-color: var(--dark);
+  background-size: cover;
+  background-position: center;
+  color: #d9dcd6;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  break-after: page;
+  image-rendering: pixelated;
+}
+
+.cover .brand { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 44pt; color: #e3b04b; margin: 0; }
+.cover .title { font-size: 30pt; margin: 2mm 0 3mm; color: #fff; }
+.cover .subtitle { font-size: 13pt; margin: 0 0 14mm; max-width: 150mm; }
+.cover .stamp { font-family: 'JetBrains Mono', monospace; font-size: 8.5pt; color: #9aa3a0; margin: 0; max-width: none; }
+
+.chapter, .colophon { break-before: page; }
+.chapter:first-of-type { break-before: auto; }
+.screen-chapter { break-before: page; }
+.keep { break-inside: avoid; }
+.overview { display: grid; grid-template-columns: auto 1fr; column-gap: 9mm; align-items: start; }
+.overview .legend ol { padding-left: 6mm; font-weight: 600; }
+.overview .legend h4 { margin-bottom: 2.5mm; }
+.overview .legend p { font-size: 9.2pt; color: var(--soft); }
+.lead { font-size: 11.5pt; color: var(--soft); max-width: 220mm; }
+.note { font-size: 8.8pt; color: var(--muted); max-width: 230mm; }
+
+/* блок экрана: снимок слева, описание справа; у широкого блока снимок сверху */
+.block {
+  break-inside: avoid;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 7mm;
+  align-items: start;
+  background: var(--card);
+  border-radius: 1.5mm;
+  padding: 4mm 5mm;
+  margin-bottom: 4.5mm;
+}
+
+.block header { grid-column: 1 / -1; display: flex; align-items: center; gap: 2.5mm; margin-bottom: 3mm; }
+.block figure { margin: 0; }
+.block .n { flex: none; width: 6.5mm; height: 6.5mm; border-radius: 50%; background: #e3b04b; color: var(--dark); font-weight: 700; font-size: 9.5pt; line-height: 6.5mm; text-align: center; }
+.block dl { margin: 0; font-size: 9.4pt; }
+.block dt { color: var(--amber); font-weight: 700; font-size: 8pt; letter-spacing: 0.04em; text-transform: uppercase; }
+.block dd { margin: 0 0 2.4mm; }
+.block.wide { grid-template-columns: 1fr; }
+.block.wide figure { margin-bottom: 3.5mm; }
+.block.wide dl { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 7mm; grid-auto-flow: column; grid-template-rows: auto auto; }
+.block.wide dd { margin: 0; }
+
+/* пример хода */
+.story { list-style: none; padding: 0; max-width: none; counter-reset: step; }
+.step { counter-increment: step; break-inside: avoid; border-top: 0.3mm solid var(--line); padding: 4mm 0 1mm; margin: 0; }
+.step h3 { margin-top: 0; }
+.step h3::before { content: counter(step); display: inline-block; width: 7mm; height: 7mm; margin-right: 2.5mm; border-radius: 50%; background: var(--dark); color: #e3b04b; font-size: 10pt; line-height: 7mm; text-align: center; }
+.step p { max-width: 230mm; }
+.shots { display: flex; flex-wrap: wrap; gap: 4mm; align-items: flex-start; }
+.shots figure { margin-bottom: 2mm; }
+
+/* три карты рядом */
+.maps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; break-inside: avoid; }
+.maps figure { margin-bottom: 2mm; }
+.maps h4 { margin-bottom: 1mm; }
+.maps p { font-size: 9pt; color: var(--soft); }

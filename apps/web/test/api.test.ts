@@ -65,7 +65,7 @@ describe('состояние для экранов', () => {
 
   it('несёт карту, стратегию и расход внимания на маршрут', () => {
     const s = buildState(demo, '2026-11-13');
-    expect(s.terrain.cells).toHaveLength(s.terrain.rows);
+    expect(s.terrain.cells).toHaveLength(s.terrain.rows * s.terrain.detail);
     expect(s.terrain.tasks).toHaveLength(6);
     expect(s.strategy.camps.find((c) => c.isTarget)?.name).toBe('Бета-релиз');
     expect(s.attention).toEqual({ windowDays: 14, turns: 1, spent: 6, route: 3 });

@@ -11,6 +11,7 @@ export {
   attentionSplit,
   GROUND,
   MAP_COLS,
+  MAP_DETAIL,
   MAP_ROWS,
   mapView,
   pointLabel,

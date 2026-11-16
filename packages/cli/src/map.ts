@@ -24,8 +24,9 @@ function picture(view: MapView, marks: Map<string, string>, p: Paint): string[] 
   for (let y = 0; y < view.rows; y += 2) {
     let line = '';
     for (let x = 0; x < view.cols; x += 1) {
-      const top = view.cells[y]?.[x] ?? '.';
-      const bottom = view.cells[y + 1]?.[x] ?? top;
+      // В терминале знак крупнее пикселя карты: берём по одной клетке на единицу раскладки.
+      const top = view.cells[y * view.detail]?.[x * view.detail] ?? '.';
+      const bottom = view.cells[(y + 1) * view.detail]?.[x * view.detail] ?? top;
       const mark = marks.get(`${x}:${y >> 1}`);
       if (!p.enabled) line += mark ?? GLYPH[top] ?? ' ';
       else if (mark) line += `\u001b[1;38;5;220;48;5;234m${mark}\u001b[0m`;

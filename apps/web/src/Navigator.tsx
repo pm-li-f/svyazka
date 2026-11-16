@@ -26,7 +26,11 @@ export function useNavigator(nav: Models) {
       setBusy(false);
     }
   };
-  return { model, setModel: setPicked, busy, answer, error, send };
+  const clear = () => {
+    setAnswer(null);
+    setError(null);
+  };
+  return { model, setModel: setPicked, busy, answer, error, send, clear, shown: busy || answer !== null || error !== null };
 }
 
 /** Переключатель модели. Модель без ключа выбрать нельзя: подсказка говорит, какого ключа нет. */
@@ -51,8 +55,23 @@ export function ModelPicker({ nav, model, onPick }: { nav: Models; model: string
 }
 
 /** Ответ штурмана: кто отвечал, какие слои ему ушли и что он смотрел. */
-export function NavigatorAnswer({ nav, busy, answer, error, idle }: { nav: Models; busy: boolean; answer: Answer | null; error: string | null; idle?: ReactNode }) {
-  const noKeys = nav.models.every((m) => !m.ready);
+export function NavigatorAnswer({
+  nav,
+  busy,
+  answer,
+  error,
+  idle,
+  quiet,
+}: {
+  nav: Models;
+  busy: boolean;
+  answer: Answer | null;
+  error: string | null;
+  idle?: ReactNode;
+  /** Не напоминать про ключи: об этом уже сказано рядом. */
+  quiet?: boolean;
+}) {
+  const noKeys = !quiet && nav.models.every((m) => !m.ready);
   return (
     <div className="navigator-out" aria-live="polite">
       {noKeys && (
@@ -81,17 +100,63 @@ export function NavigatorAnswer({ nav, busy, answer, error, idle }: { nav: Model
   );
 }
 
-/** Строка штурмана: вопрос по данным игры. Штурман только читает и ничего не меняет. */
-export function NavigatorLine({ state }: { state: StateView }) {
+/**
+ * Строка штурмана: вопрос по данным игры. Штурман только читает и ничего не меняет.
+ * `compact` — одна строка для нижней панели экрана: ответ раскрывается над ней и закрывается крестиком.
+ */
+export function NavigatorLine({ state, compact }: { state: StateView; compact?: boolean }) {
   const nav = state.navigator;
   const n = useNavigator(nav);
   const [question, setQuestion] = useState('');
+  const noKeys = nav.models.every((m) => !m.ready);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (question.trim()) void n.send((model) => api.ask(question, model));
   };
+  const form = (
+    <form className="cmdline" onSubmit={submit}>
+      <span className="amber" aria-hidden="true">
+        {compact ? 'штурман ?' : '?'}
+      </span>
+      <label htmlFor="navigator-q" className="sr-only">
+        Вопрос штурману
+      </label>
+      <input
+        id="navigator-q"
+        type="text"
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        placeholder={noKeys ? 'ключей моделей нет: выполни в терминале sv keys init и обнови страницу' : 'вопрос по данным игры: с кем поговорить первым?'}
+        autoComplete="off"
+        disabled={!n.model}
+      />
+      {compact && <ModelPicker nav={nav} model={n.model} onPick={n.setModel} />}
+      <button type="submit" className="btn" disabled={!n.model || n.busy || !question.trim()}>
+        спросить
+      </button>
+    </form>
+  );
+
+  if (compact) {
+    return (
+      <section className="stack" data-block="navigator">
+        {n.shown && (
+          <div className="panel navigator-pop">
+            <NavigatorAnswer nav={nav} busy={n.busy} answer={n.answer} error={n.error} quiet />
+            {!n.busy && (
+              <button type="button" className="btn link close" onClick={n.clear} aria-label="Скрыть ответ штурмана">
+                скрыть
+              </button>
+            )}
+          </div>
+        )}
+        {form}
+      </section>
+    );
+  }
+
   return (
-    <section className="panel">
+    <section className="panel" data-block="navigator">
       <h2 className="panel-title between">
         <span>штурман</span>
         <ModelPicker nav={nav} model={n.model} onPick={n.setModel} />
@@ -104,26 +169,7 @@ export function NavigatorLine({ state }: { state: StateView }) {
           error={n.error}
           idle={<p className="hint">Спроси по данным игры: «с кем поговорить первым?», «что мешает дойти до лагеря?», «где я обещал и не сделал?»</p>}
         />
-        <form className="cmdline" onSubmit={submit}>
-          <span className="amber" aria-hidden="true">
-            ?
-          </span>
-          <label htmlFor="navigator-q" className="sr-only">
-            Вопрос штурману
-          </label>
-          <input
-            id="navigator-q"
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="вопрос штурману"
-            autoComplete="off"
-            disabled={!n.model}
-          />
-          <button type="submit" className="btn" disabled={!n.model || n.busy || !question.trim()}>
-            спросить
-          </button>
-        </form>
+        {form}
       </div>
     </section>
   );
@@ -134,7 +180,7 @@ export function NavigatorPrep({ state, id }: { state: StateView; id: string }) {
   const nav = state.navigator;
   const n = useNavigator(nav);
   return (
-    <div className="stack prep">
+    <div className="stack prep" data-block="sheet-prep">
       <div className="between">
         <button type="button" className="btn" disabled={!n.model || n.busy} onClick={() => void n.send((model) => api.prep(id, model))}>
           заметки к встрече от штурмана

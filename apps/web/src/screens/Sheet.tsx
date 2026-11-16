@@ -1,7 +1,7 @@
 import { NavigatorPrep } from '../Navigator';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { api, type Layer, type SheetView, type StateView } from '../api';
-import { Cmd, Dots, LAYER_NAME, type Run, TERRAIN } from '../ui';
+import { Cmd, Dots, LAYER_NAME, type Run, Scroll, TERRAIN } from '../ui';
 
 const CRAFT = { 1: 'учусь', 2: 'делаю сам', 3: 'учу других' } as const;
 const VIEW_AS: [Layer, string][] = [
@@ -10,9 +10,9 @@ const VIEW_AS: [Layer, string][] = [
   ['me', 'всё, что видишь ты'],
 ];
 
-function Block({ title, layer, who, children }: { title: string; layer: Layer; who: string; children: ReactNode }) {
+function Block({ name, title, layer, who, children }: { name: string; title: string; layer: Layer; who: string; children: ReactNode }) {
   return (
-    <div className="block">
+    <div className="block" data-block={`sheet-${name}`}>
       <div className="between">
         <h3 className="block-title">{title}</h3>
         <span className={`vis ${layer}`}>{layer === 'pair' ? `${who} и ты` : LAYER_NAME[layer]}</span>
@@ -66,7 +66,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
 
   return (
     <div className="stack-lg">
-      <div className="sheet-bar">
+      <div className="sheet-bar" data-block="sheet-bar">
         <span className="muted">
           <Cmd>sv sheet</Cmd>
         </span>
@@ -88,7 +88,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
 
       <div className="grid3 sheet-cols">
         <section className="panel">
-          <Block title="кто" layer="team" who={person.name}>
+          <Block name="who" title="кто" layer="team" who={person.name}>
             <div className="fields2">
               <Field label="имя">{person.name}</Field>
               {person.joined && <Field label="в отряде с">{person.joined}</Field>}
@@ -111,7 +111,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           </Block>
 
           {sheet.tasks.length > 0 && (
-            <Block title="в переходах" layer="team" who={person.name}>
+            <Block name="tasks" title="в переходах" layer="team" who={person.name}>
               {sheet.tasks.map((t) => (
                 <div key={t.id} className="between">
                   <span>
@@ -124,7 +124,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           )}
 
           {pair && (pair.drives.length > 0 || pair.dampers.length > 0) && (
-            <Block title="что движет" layer="pair" who={person.name}>
+            <Block name="drives" title="что движет" layer="pair" who={person.name}>
               <div className="chips">
                 {pair.drives.map((d) => (
                   <span key={d} className="chip">
@@ -137,7 +137,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           )}
 
           {pair?.state && (
-            <Block title={`состояние · заполняет ${person.isLead ? 'сам' : person.name}`} layer="pair" who={person.name}>
+            <Block name="state" title={`состояние · заполняет ${person.isLead ? 'сам' : person.name}`} layer="pair" who={person.name}>
               <div className="fields2">
                 <Field label="запас сил">
                   <Dots n={pair.state.energy} of={5} className={pair.state.energy <= 2 ? 'coral' : undefined} />
@@ -156,7 +156,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
         </section>
 
         <section className="panel">
-          <Block title="ремесло · согласованный уровень" layer="team" who={person.name}>
+          <Block name="craft" title="ремесло · согласованный уровень" layer="team" who={person.name}>
             {sheet.craft.map((c) => (
               <div key={c.skill} className="line">
                 <span className="sans">{c.label}</span>
@@ -173,7 +173,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           </Block>
 
           {pair && pair.thinking.length > 0 && (
-            <Block title="мышление и люди" layer="pair" who={person.name}>
+            <Block name="thinking" title="мышление и люди" layer="pair" who={person.name}>
               <div className="think head">
                 <span />
                 <span className="blue">сам</span>
@@ -193,7 +193,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           )}
 
           {pair?.quest && (
-            <Block title="личный квест" layer="pair" who={person.name}>
+            <Block name="quest" title="личный квест" layer="pair" who={person.name}>
               <p className="prose strong">{pair.quest.text}</p>
               <span className="quest" role="img" aria-label={`сделано ${pair.quest.done} из ${pair.quest.steps}`}>
                 {Array.from({ length: pair.quest.steps }, (_, i) => (
@@ -208,7 +208,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
         {(pair || me) && (
         <section className="panel">
           {layer === 'me' && !person.isLead && (
-            <Block title="1on1" layer="pair" who={person.name}>
+            <Block name="oneonone" title="1on1" layer="pair" who={person.name}>
               {pair && (
                 <p className={`hint ${pair.stale1on1 ? 'coral' : ''}`}>
                   {pair.daysSince1on1 === null
@@ -236,7 +236,8 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           )}
 
           {pair && pair.journal.length > 0 && (
-            <Block title="журнал встреч" layer="pair" who={person.name}>
+            <Block name="journal" title="журнал встреч" layer="pair" who={person.name}>
+              <Scroll label="Журнал встреч" size="s">
               {pair.journal.map((e, i) => (
                 <div key={i} className="entry">
                   <span className="field-label">
@@ -245,12 +246,13 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
                   <p className={`prose ${i === 0 ? '' : i === 1 ? 'soft' : 'muted'}`}>{e.text}</p>
                 </div>
               ))}
+              </Scroll>
               <p className="hint">Записи тускнеют. Старым верь осторожно.</p>
             </Block>
           )}
 
           {pair?.review360 && (
-            <Block title="360 · темы, без баллов" layer="pair" who={person.name}>
+            <Block name="review360" title="360 · темы, без баллов" layer="pair" who={person.name}>
               {pair.review360.themes.map((t) => (
                 <p key={t} className="prose">
                   «{t}»
@@ -261,7 +263,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           )}
 
           {me && me.bonds.length > 0 && (
-            <Block title="связи" layer="me" who={person.name}>
+            <Block name="bonds" title="связи" layer="me" who={person.name}>
               {me.bonds.map((b) => (
                 <div key={b.with} className="between">
                   <span className="sans">
@@ -275,12 +277,14 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
           )}
 
           {me && me.margin.length > 0 && (
-            <Block title="заметки на полях" layer="me" who={person.name}>
+            <Block name="margin" title="заметки на полях" layer="me" who={person.name}>
+              <Scroll label="Заметки на полях" size="s">
               {me.margin.map((m, i) => (
                 <p key={i} className="hand">
                   {m.text}
                 </p>
               ))}
+              </Scroll>
             </Block>
           )}
         </section>

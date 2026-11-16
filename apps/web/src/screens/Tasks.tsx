@@ -11,8 +11,8 @@ export function Tasks({ state }: { state: StateView }) {
   return (
     <div className="stack-lg">
       <div className="split">
-        <Panel title={<Cmd>sv raci</Cmd>} className="grow">
-          <div className="scroll-x">
+        <Panel title={<Cmd>sv raci</Cmd>} className="grow" block="raci">
+          <div className="scroll-x cap" tabIndex={0} role="group" aria-label="Матрица RACI">
             <table className="grid raci">
               <thead>
                 <tr>
@@ -63,7 +63,7 @@ export function Tasks({ state }: { state: StateView }) {
               </tbody>
             </table>
           </div>
-          <ul className="lint">
+          <ul className="lint" data-block="raci-lint">
             {raci.lint.length === 0 && (
               <li>
                 <b className="green">✓</b> нарушений нет
@@ -96,7 +96,7 @@ export function Tasks({ state }: { state: StateView }) {
           </ul>
         </Panel>
 
-        <Panel title="кто есть кто в связке" className="side">
+        <Panel title="кто есть кто в связке" className="side" block="raci-legend">
           <div className="pad stack">
             <div className="legend">
               <span className="cell R">R</span>
@@ -127,8 +127,9 @@ export function Tasks({ state }: { state: StateView }) {
             </>
           }
           className="grow"
+          block="skills"
         >
-          <div className="scroll-x">
+          <div className="scroll-x cap" tabIndex={0} role="group" aria-label="Матрица ремесла">
             <table className="grid skills">
               <thead>
                 <tr>
@@ -167,7 +168,7 @@ export function Tasks({ state }: { state: StateView }) {
           </p>
         </Panel>
 
-        <Panel title="тактика по местности" className="side">
+        <Panel title="тактика по местности" className="side" block="tactics">
           <ul className="rows">
             <li>
               <b className="soft">тропа · простой</b>

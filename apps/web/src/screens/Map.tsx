@@ -1,6 +1,6 @@
 import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from 'react';
 import { api, type StateView } from '../api';
-import { CYCLE, Panel, type Run, STATUS } from '../ui';
+import { CYCLE, Panel, type Run, Scroll, STATUS } from '../ui';
 import { type Anchor, dayOf, labelsFor, MAP_MIN_WIDTH, type Placed, pointText, SQUAD_LABEL, taskHead as head } from './mapLayout';
 
 type View = StateView['terrain'];
@@ -55,26 +55,27 @@ function draw(canvas: HTMLCanvasElement, view: View, width: number) {
   if (canvas.height !== h) canvas.height = h;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+  // cw и ch — размер единицы раскладки: в ней заданы точки и значки. Клетка рельефа в detail раз мельче.
   const cw = w / view.cols;
   const ch = h / view.rows;
-  const px = (x: number) => Math.round(x * cw);
-  const py = (y: number) => Math.round(y * ch);
+  const px = (x: number) => Math.round((x * cw) / view.detail);
+  const py = (y: number) => Math.round((y * ch) / view.detail);
 
-  for (let y = 0; y < view.rows; y += 1) {
+  for (let y = 0; y < view.rows * view.detail; y += 1) {
     const row = view.cells[y] ?? '';
-    for (let x = 0; x < view.cols; x += 1) {
+    for (let x = 0; x < view.cols * view.detail; x += 1) {
       const code = row[x] ?? '.';
       const shades = SHADES[code] ?? (SHADES['.'] as [string, string, string]);
       // Туман — шахматная рябь: светлая клетка через одну.
       const shade = code === '%' ? ((x + y) % 2 === 0 ? 2 : speck(x, y) % 2) : speck(x, y);
-      const far = view.sight === null ? 0 : Math.hypot(x - view.squad.x, y - view.squad.y) - view.sight;
+      const far = view.sight === null ? 0 : Math.hypot(x / view.detail - view.squad.x, y / view.detail - view.squad.y) - view.sight;
       const haze = Math.min(1, Math.max(0, far / 7)) * 0.45;
       ctx.fillStyle = hazed(shades[shade] as string, haze);
       ctx.fillRect(px(x), py(y), px(x + 1) - px(x), py(y + 1) - py(y));
       // Шторм — косые струи поверх тёмной земли.
-      if (code === '!' && (x + Math.floor(y / 2)) % 3 === 0 && y % 2 === 0) {
+      if (code === '!' && (x + Math.floor(y / 3)) % 4 === 0 && y % 3 === 0) {
         ctx.fillStyle = hazed(CORAL, haze);
-        ctx.fillRect(px(x + 0.36), py(y + 0.05), Math.max(2, px(0.28)), py(y + 0.95) - py(y + 0.05));
+        ctx.fillRect(px(x + 0.25), py(y + 0.1), Math.max(1, px(0.5)), py(y + 1.9) - py(y + 0.1));
       }
     }
   }
@@ -157,7 +158,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
     <div className="split">
       <div className="grow stack-lg">
         <div className="scroll-x">
-          <div className="map" ref={frame} style={{ minWidth: MAP_MIN_WIDTH, aspectRatio: `${view.cols} / ${view.rows}` }}>
+          <div className="map" data-block="map" ref={frame} style={{ minWidth: MAP_MIN_WIDTH, aspectRatio: `${view.cols} / ${view.rows}` }}>
             <canvas ref={canvas} role="img" aria-label={summary} />
             {view.route.map((p) => (
               <span
@@ -193,7 +194,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
           </div>
         </div>
 
-        <div className="grid4">
+        <div className="grid4" data-block="map-terrain">
           {TERRAINS.map((kind) => {
             const tasks = view.tasks.filter((t) => t.terrain === kind.id);
             return (
@@ -248,7 +249,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
       </div>
 
       <div className="side stack-lg">
-        <Panel title="дальний маршрут">
+        <Panel title="дальний маршрут" block="map-route">
           {strategy.vision && <p className="pad sans soft">Вершина: {strategy.vision}.</p>}
           <ul className="rows">
             {strategy.camps
@@ -272,7 +273,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
           </ul>
         </Panel>
 
-        <Panel title="состав">
+        <Panel title="состав" block="map-squad">
           <div className="pad stack">
             <p className="headcount">
               <b>{strategy.squad.people}</b>
@@ -305,7 +306,9 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
           </div>
         </Panel>
 
-        <Panel title="трещины · риски">
+        <Panel title={`трещины · риски · ${strategy.cracks.length}`} block="map-cracks">
+          {strategy.cracks.length === 0 && <p className="pad muted">Трещин не видно.</p>}
+          <Scroll label="Трещины и риски" size="s">
           <ul className="rows">
             {strategy.cracks.map((c) => (
               <li key={`${c.code}:${c.target}`}>
@@ -313,7 +316,9 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
                 <span className="sans soft">{c.text}</span>
               </li>
             ))}
-            <li>
+          </ul>
+          </Scroll>
+          <div className="pad stack attention-split" data-block="map-attention">
               <b className="amber">внимание командира</b>
               <span className="sans soft">
                 {attention.turns === 0
@@ -321,8 +326,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
                   : `За ${attention.windowDays} дн. потрачено ${attention.spent}, из них на маршрут — ${attention.route}.`}
               </span>
               {attention.turns > 0 && attention.route === 0 && <span className="sans coral">На стратегию внимание не уходило.</span>}
-            </li>
-          </ul>
+          </div>
           <RouteWork state={state} run={run} />
         </Panel>
       </div>

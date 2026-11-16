@@ -17,9 +17,10 @@ describe('карта', () => {
 
   it('рельеф нужного размера и только из известных клеток', () => {
     const view = mapView(game(), TODAY);
-    expect(view.cells).toHaveLength(view.rows);
+    expect(view.detail).toBe(2);
+    expect(view.cells).toHaveLength(view.rows * view.detail);
     for (const row of view.cells) {
-      expect(row).toHaveLength(view.cols);
+      expect(row).toHaveLength(view.cols * view.detail);
       for (const code of row) expect(Object.keys(GROUND)).toContain(code);
     }
   });
@@ -53,7 +54,7 @@ describe('карта', () => {
     ]);
     for (const code of ['"', '#', '%', '!']) expect(count(view.cells, code)).toBeGreaterThan(0);
     for (const a of view.tasks) {
-      expect(view.cells[Math.round(a.y)]?.[Math.round(a.x)]).toBeDefined();
+      expect(view.cells[Math.round(a.y * view.detail)]?.[Math.round(a.x * view.detail)]).toBeDefined();
       for (const b of view.tasks) {
         if (a.id >= b.id) continue;
         expect(Math.hypot((a.x - b.x) / 2.4, a.y - b.y)).toBeGreaterThan(5);

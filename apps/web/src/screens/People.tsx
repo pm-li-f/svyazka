@@ -1,6 +1,6 @@
 import { NavigatorLine } from '../Navigator';
 import type { StateView } from '../api';
-import { Attention, Cmd, days, DecisionInput, Panel, type Run, StartTurn } from '../ui';
+import { Attention, Cmd, days, DecisionInput, Panel, type Run, Scroll, StartTurn } from '../ui';
 
 const SEVERITY = { crit: 'coral', warn: 'amber', lint: 'amber', info: 'blue' } as const;
 const STATUS_COLOR = { steady: 'green', loaded: 'amber', stale: 'coral', running: 'muted' } as const;
@@ -13,8 +13,8 @@ export function People({ state, run }: { state: StateView; run: Run }) {
     <div className="stack-lg">
       <div className="split">
         <div className="stack-lg grow">
-          <Panel title={<Cmd>sv roster --with-agents</Cmd>} >
-            <div className="scroll-x">
+          <Panel title={<Cmd>sv roster --with-agents</Cmd>} block="roster">
+            <div className="scroll-x cap" tabIndex={0} role="group" aria-label="Отряд">
               <table className="grid roster">
                 <thead>
                   <tr>
@@ -73,7 +73,8 @@ export function People({ state, run }: { state: StateView; run: Run }) {
           </Panel>
 
           <div className="grid3 widgets">
-            <Panel title="слово агентам">
+            <Panel title="слово агентам" block="agents">
+              <Scroll label="Отчёты агентов" size="s">
               <ul className="rows">
                 {state.agents.map((a) => (
                   <li key={a.id}>
@@ -85,9 +86,10 @@ export function People({ state, run }: { state: StateView; run: Run }) {
                   </li>
                 ))}
               </ul>
+              </Scroll>
             </Panel>
 
-            <Panel title="error budget · стресс">
+            <Panel title="error budget · стресс" block="stress">
               <div className="pad stack">
                 {state.stress.map((s) => (
                   <div key={s.id} className="bar-row">
@@ -109,7 +111,7 @@ export function People({ state, run }: { state: StateView; run: Run }) {
               </div>
             </Panel>
 
-            <Panel title="ход">
+            <Panel title="ход" block="turn-widget">
               <div className="pad stack">
                 {turn ? (
                   <>
@@ -132,8 +134,9 @@ export function People({ state, run }: { state: StateView; run: Run }) {
           </div>
         </div>
 
-        <Panel title={`сигналы · ${state.signals.length}`} className="side">
+        <Panel title={`сигналы · ${state.signals.length}`} className="side" block="signals">
           {state.signals.length === 0 && <p className="pad muted">Сигналов нет.</p>}
+          <Scroll label="Сигналы">
           <ul className="rows">
             {state.signals.map((s, i) => (
               <li key={i}>
@@ -149,12 +152,15 @@ export function People({ state, run }: { state: StateView; run: Run }) {
               </li>
             ))}
           </ul>
+          </Scroll>
         </Panel>
       </div>
 
-      <NavigatorLine state={state} />
-
-      {turn && !turn.closed && <DecisionInput run={run} />}
+      {/* Строки ввода держатся у нижнего края окна: длинные списки их не утаскивают. */}
+      <div className="dock">
+        <NavigatorLine state={state} compact />
+        {turn && !turn.closed && <DecisionInput run={run} />}
+      </div>
     </div>
   );
 }

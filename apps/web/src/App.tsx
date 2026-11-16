@@ -83,15 +83,15 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="top">
+      <header className="top" data-block="top">
         <div className="brand">
           <span className="wordmark">связка</span>
           <span className="tagline">экспедиция продуктовой команды</span>
         </div>
         <nav className="navs" aria-label="Экраны">
-          {nav('people', '#/people', '1 отряд')}
-          {nav('map', '#/map', '2 карта')}
-          {nav('tasks', '#/tasks', '3 переходы')}
+          {nav('people', '#/people', 'отряд')}
+          {nav('map', '#/map', 'карта')}
+          {nav('tasks', '#/tasks', 'переходы')}
           {nav('sheet', `#/sheet/${sheetId ?? ''}`, 'лист')}
           {nav('turn', '#/turn', 'ход')}
         </nav>
@@ -108,7 +108,7 @@ export function App() {
         </div>
       </header>
 
-      <div className="strip">
+      <div className="strip" data-block="strip">
         <span>цикл:</span>
         {CYCLE.map(([id, label], i) => (
           <span key={id} className={i === phase ? 'now' : undefined}>

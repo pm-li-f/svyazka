@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, type StateView } from '../api';
-import { Attention, Cmd, DecisionInput, Panel, type Run, StartTurn } from '../ui';
+import { Attention, Cmd, DecisionInput, Panel, type Run, Scroll, StartTurn } from '../ui';
 
 export function TurnScreen({ state, run }: { state: StateView; run: Run }) {
   const [confirming, setConfirming] = useState(false);
@@ -17,7 +17,7 @@ export function TurnScreen({ state, run }: { state: StateView; run: Run }) {
 
   return (
     <div className="split">
-      <Panel title={<Cmd>sv turn</Cmd>} className="grow">
+      <Panel title={<Cmd>sv turn</Cmd>} className="grow" block="turn">
         {!turn ? (
           <div className="pad">
             <StartTurn state={state} run={run} />
@@ -45,10 +45,11 @@ export function TurnScreen({ state, run }: { state: StateView; run: Run }) {
               )}
             </div>
 
-            <h3 className="sub">действия</h3>
+            <h3 className="sub">действия · {turn.actions.length}</h3>
             {turn.actions.length === 0 ? (
               <p className="pad muted">Пока ничего. Открой лист или запиши 1on1.</p>
             ) : (
+              <Scroll label="Действия за ход" size="s">
               <table className="grid">
                 <tbody>
                   {turn.actions.map((a, i) => (
@@ -61,10 +62,12 @@ export function TurnScreen({ state, run }: { state: StateView; run: Run }) {
                   ))}
                 </tbody>
               </table>
+              </Scroll>
             )}
 
-            <h3 className="sub">решения</h3>
+            <h3 className="sub">решения · {turn.decisions.length}</h3>
             {turn.decisions.length === 0 && <p className="pad muted">Решений пока нет.</p>}
+            <Scroll label="Решения за ход" size="s">
             <ul className="rows">
               {turn.decisions.map((d, i) => (
                 <li key={i}>
@@ -72,6 +75,7 @@ export function TurnScreen({ state, run }: { state: StateView; run: Run }) {
                 </li>
               ))}
             </ul>
+            </Scroll>
             {!turn.closed && (
               <div className="pad">
                 <DecisionInput run={run} />
@@ -79,9 +83,10 @@ export function TurnScreen({ state, run }: { state: StateView; run: Run }) {
             )}
 
             {turn.closed && (
-              <>
-                <h3 className="sub">до чего не дошёл</h3>
+              <div data-block="turn-untouched">
+                <h3 className="sub">до чего не дошёл · {turn.untouched.length}</h3>
                 {turn.untouched.length === 0 && <p className="pad muted">Всё разобрано.</p>}
+                <Scroll label="До чего не дошёл" size="s">
                 <ul className="rows">
                   {turn.untouched.map((u, i) => (
                     <li key={i}>
@@ -89,14 +94,15 @@ export function TurnScreen({ state, run }: { state: StateView; run: Run }) {
                     </li>
                   ))}
                 </ul>
+                </Scroll>
                 {commit && <p className="panel-foot">{commit}</p>}
-              </>
+              </div>
             )}
           </>
         )}
       </Panel>
 
-      <Panel title="цена внимания" className="side">
+      <Panel title="цена внимания" className="side" block="turn-costs">
         <div className="pad stack">
           {Object.entries(state.actionCosts).map(([kind, cost]) => (
             <div key={kind} className="between">
