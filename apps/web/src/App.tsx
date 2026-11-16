@@ -1,28 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type StateView } from './api';
+import { MapScreen } from './screens/Map';
 import { People } from './screens/People';
 import { Sheet } from './screens/Sheet';
 import { Tasks } from './screens/Tasks';
 import { TurnScreen } from './screens/Turn';
-import { Attention, type Run, StartTurn } from './ui';
+import { Attention, CYCLE, type Run, StartTurn } from './ui';
 
-type Route = { name: 'people' } | { name: 'tasks' } | { name: 'turn' } | { name: 'sheet'; id: string | null };
+type Route = { name: 'people' } | { name: 'map' } | { name: 'tasks' } | { name: 'turn' } | { name: 'sheet'; id: string | null };
 
 function parseHash(): Route {
   const [, name, id] = window.location.hash.split('/');
+  if (name === 'map') return { name: 'map' };
   if (name === 'tasks') return { name: 'tasks' };
   if (name === 'turn') return { name: 'turn' };
   if (name === 'sheet') return { name: 'sheet', id: id ?? null };
   return { name: 'people' };
 }
-
-const CYCLE = [
-  ['initiating', 'замысел'],
-  ['planning', 'маршрут'],
-  ['executing', 'переход'],
-  ['monitoring', 'сверка'],
-  ['closing', 'разбор'],
-] as const;
 
 export function App() {
   const [state, setState] = useState<StateView | null>(null);
@@ -96,9 +90,7 @@ export function App() {
         </div>
         <nav className="navs" aria-label="Экраны">
           {nav('people', '#/people', '1 отряд')}
-          <span className="nav off" title="Карта появится на шаге 5">
-            2 карта
-          </span>
+          {nav('map', '#/map', '2 карта')}
           {nav('tasks', '#/tasks', '3 переходы')}
           {nav('sheet', `#/sheet/${sheetId ?? ''}`, 'лист')}
           {nav('turn', '#/turn', 'ход')}
@@ -139,6 +131,7 @@ export function App() {
 
       <main className="screen">
         {route.name === 'people' && <People state={state} run={run} />}
+        {route.name === 'map' && <MapScreen state={state} run={run} />}
         {route.name === 'tasks' && <Tasks state={state} />}
         {route.name === 'turn' && <TurnScreen state={state} run={run} />}
         {route.name === 'sheet' && sheetId && <Sheet key={sheetId} state={state} id={sheetId} version={version} run={run} />}

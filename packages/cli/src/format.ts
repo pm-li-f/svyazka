@@ -6,11 +6,13 @@ export interface Paint {
   blue: (s: string) => string;
   dim: (s: string) => string;
   bold: (s: string) => string;
+  /** Цвет включён: можно рисовать картинку, а не только подкрашивать текст. */
+  enabled: boolean;
 }
 
 export function makePaint(color: boolean): Paint {
   const wrap = (code: number) => (s: string) => (color ? `\u001b[${code}m${s}\u001b[0m` : s);
-  return { red: wrap(31), yellow: wrap(33), green: wrap(32), blue: wrap(34), dim: wrap(2), bold: wrap(1) };
+  return { red: wrap(31), yellow: wrap(33), green: wrap(32), blue: wrap(34), dim: wrap(2), bold: wrap(1), enabled: color };
 }
 
 /** Ширина в знаках, а не в байтах: кириллица и значки считаются по одному. */

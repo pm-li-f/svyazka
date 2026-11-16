@@ -7,3 +7,20 @@ export { skillCoverage, type SkillCoverage } from './skills.js';
 export { signals, type Signal, type Severity } from './signals.js';
 export { raciMatrix, sheetView, skillMatrix, type RaciMatrix, type SheetView, type SkillMatrix } from './views.js';
 export { addDecision, currentTurn, endTurn, hasAction, recordAction, startTurn, TurnError } from './turn.js';
+export {
+  attentionSplit,
+  GROUND,
+  MAP_COLS,
+  MAP_ROWS,
+  mapView,
+  pointLabel,
+  ROUTE_ACTION,
+  strategy,
+  type AttentionSplit,
+  type Ground,
+  type GroundCode,
+  type MapPoint,
+  type MapTask,
+  type MapView,
+  type Strategy,
+} from './map.js';

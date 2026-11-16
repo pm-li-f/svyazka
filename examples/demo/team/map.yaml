@@ -11,3 +11,4 @@ camps:
   - {id: beta, name: Бета-релиз, phase: current, note: "4 недели, один перевал, один шторм"}
   - {id: paying, name: Первые платящие, phase: planned, note: Маршрут не проложен. Нужна вторая связка.}
   - {id: breakeven, name: Окупаемость, phase: idea}
+headcount: {target: 12, by: 2027-11-01}

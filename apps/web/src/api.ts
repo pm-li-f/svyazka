@@ -22,5 +22,6 @@ export const api = {
   startTurn: (budget?: number) => request<{ ok: true }>('POST', '/api/turn/start', { budget }),
   endTurn: () => request<{ ok: true; commit: string | null }>('POST', '/api/turn/end'),
   oneOnOne: (id: string, note: string) => request<{ ok: true }>('POST', '/api/1on1', { id, note }),
+  act: (kind: string, target?: string, note?: string) => request<{ ok: true }>('POST', '/api/act', { kind, target, note }),
   decide: (text: string) => request<{ ok: true }>('POST', '/api/decide', { text }),
 };

@@ -60,6 +60,14 @@ describe('состояние для экранов', () => {
     expect(s.agents.find((a) => a.id === 'reviewer')?.report?.text).toContain('41 ревью');
   });
 
+  it('несёт карту, стратегию и расход внимания на маршрут', () => {
+    const s = buildState(demo, '2026-11-13');
+    expect(s.terrain.cells).toHaveLength(s.terrain.rows);
+    expect(s.terrain.tasks).toHaveLength(6);
+    expect(s.strategy.camps.find((c) => c.isTarget)?.name).toBe('Бета-релиз');
+    expect(s.attention).toEqual({ windowDays: 14, turns: 1, spent: 6, route: 3 });
+  });
+
   it('не содержит данных из слоёв пары и CPTO', () => {
     const text = JSON.stringify(buildState(demo, '2026-11-13'));
     for (const s of ['Тяну, но без запаса', 'Просит дублёра', 'Не грузить новым', 'трение о сроках', 'Если взял']) {
@@ -69,6 +77,20 @@ describe('состояние для экранов', () => {
 });
 
 describe('API', () => {
+  it('работа над маршрутом записывается в ход и видна на карте', async () => {
+    const { base } = await start();
+    const state = async () => (await (await fetch(`${base}/api/state`)).json()) as ReturnType<typeof buildState>;
+    expect((await post(base, '/api/act', { kind: 'route-block', target: 'beta' })).status).toBe(400);
+
+    await post(base, '/api/turn/start', { budget: 5 });
+    const before = (await state()).attention;
+    expect((await post(base, '/api/act', { kind: 'route-block', target: 'beta', note: 'Разложил маршрут' })).status).toBe(200);
+    const after = await state();
+    expect(after.turn?.actions).toEqual([{ kind: 'route-block', cost: 3, target: 'beta', note: 'Разложил маршрут' }]);
+    expect(after.attention.route - before.route).toBe(3);
+    expect(after.turn?.attention.spent).toBe(3);
+  });
+
   it('проводит ход от начала до конца', async () => {
     const { base } = await start();
     const state = async () => (await (await fetch(`${base}/api/state`)).json()) as ReturnType<typeof buildState>;

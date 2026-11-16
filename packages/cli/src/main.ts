@@ -5,6 +5,7 @@ import { GameLoadError, Layer, loadGame } from '@svyazka/core';
 import { InitError, localToday } from '@svyazka/ops';
 import { askInit, parsePerson, runInit } from './init.js';
 import { makePaint } from './format.js';
+import { renderMap } from './map.js';
 import { renderRaci, renderRoster, renderSheet, renderSignals, renderSkills } from './render.js';
 import { act, budgetHint, chargeSheetRead, decide, oneOnOne, turnEnd, turnShow, turnStart } from './turn.js';
 
@@ -16,6 +17,7 @@ const HELP = `sv — «Связка» в терминале
 Смотреть
   sv web                    веб-интерфейс на http://127.0.0.1:4173
   sv roster                 отряд: люди и агенты, давность контекста
+  sv map                    карта: маршрут, местность, состав и трещины
   sv signals                сигналы хода
   sv raci                   матрица RACI и её нарушения
   sv skills                 ремесло по отряду и кто его держит
@@ -122,6 +124,9 @@ try {
   switch (command) {
     case 'roster':
       console.log(renderRoster(loadGame(dir), today, paint));
+      break;
+    case 'map':
+      console.log(renderMap(loadGame(dir), today, paint));
       break;
     case 'signals':
       console.log(renderSignals(loadGame(dir), today, paint));

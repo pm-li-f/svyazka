@@ -8,6 +8,15 @@ export const TERRAIN = {
   storm: 'шторм · хаотичный',
 } as const;
 
+/** Цикл PMBOK light: этап и его название в игре. */
+export const CYCLE = [
+  ['initiating', 'замысел'],
+  ['planning', 'маршрут'],
+  ['executing', 'переход'],
+  ['monitoring', 'сверка'],
+  ['closing', 'разбор'],
+] as const;
+
 export const STATUS = { planned: 'в плане', active: 'идёт', blocked: 'стоит', done: 'готово' } as const;
 
 export const LAYER_NAME: Record<Layer, string> = { team: 'видит отряд', pair: 'человек и ты', me: 'только ты' };

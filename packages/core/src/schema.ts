@@ -93,6 +93,7 @@ export const GameMap = z.strictObject({
     note: z.string().optional(),
     at: DateStr,
   }),
+  /** Лагеря по порядку маршрута: от базы к вершине. */
   camps: z
     .array(
       z.strictObject({
@@ -103,6 +104,8 @@ export const GameMap = z.strictObject({
       }),
     )
     .min(1),
+  /** План состава: сколько людей должно быть в отряде и к какой дате. */
+  headcount: z.strictObject({ target: z.number().int().min(1), by: DateStr }).optional(),
 });
 
 // ---------------------------------------------------------------- pair/
@@ -215,6 +218,20 @@ export const Config = z.strictObject({
     /** Нагрузка, начиная с которой единственный держатель навыка — критический сигнал. */
     load_crit: z.number().int().min(1).max(100),
   }),
+  /** Роли в отряде по Белбину: по этому списку карта показывает, каких ролей в отряде нет. */
+  belbin_roles: z
+    .array(z.string().min(1))
+    .default([
+      'генератор идей',
+      'исследователь ресурсов',
+      'координатор',
+      'мотиватор',
+      'аналитик-стратег',
+      'душа команды',
+      'реализатор',
+      'доводчик',
+      'специалист',
+    ]),
   /** Названия для людей: id навыка или качества → подпись по-русски. Без подписи показывается id. */
   labels: z.record(z.string(), z.string()).default({}),
   navigator: z.strictObject({

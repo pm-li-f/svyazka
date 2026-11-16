@@ -1,18 +1,24 @@
 import { loadGame, type GameMap, type Turn } from '@svyazka/core';
 import {
+  attentionSplit,
   budgetLimit,
   currentTurn,
+  mapView,
   raciMatrix,
   roster,
   signals,
   skillMatrix,
+  strategy,
+  type AttentionSplit,
+  type MapView,
   type RaciMatrix,
   type RosterRow,
   type Signal,
   type SkillMatrix,
+  type Strategy,
 } from '@svyazka/engine';
 
-/** Всё, что нужно экранам «отряд», «переходы» и «ход». Листы людей отдаются отдельно, по слою. */
+/** Всё, что нужно экранам «отряд», «карта», «переходы» и «ход». Листы людей отдаются отдельно, по слою. */
 export interface StateView {
   today: string;
   ttlDays: number;
@@ -29,11 +35,17 @@ export interface StateView {
   stress: { id: string; left: number | null }[];
   turn: Turn | null;
   budget: { usual: number | null; limit: number };
+  /** Карта и стратегия вокруг неё — по слою отряда. */
+  terrain: MapView;
+  strategy: Strategy;
+  /** Куда уходило внимание: данные о самом руководителе. */
+  attention: AttentionSplit;
 }
 
 export function buildState(dir: string, today: string): StateView {
   const game = loadGame(dir);
   const rows = roster(game, today);
+  const terrain = mapView(game, today);
   return {
     today,
     ttlDays: game.config.ttl_days,
@@ -57,5 +69,8 @@ export function buildState(dir: string, today: string): StateView {
       .sort((a, b) => (a.left ?? 101) - (b.left ?? 101)),
     turn: currentTurn(game, today) ?? null,
     budget: budgetLimit(game, today),
+    terrain,
+    strategy: strategy(game, terrain),
+    attention: attentionSplit(game, today),
   };
 }
