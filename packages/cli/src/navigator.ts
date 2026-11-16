@@ -23,7 +23,7 @@ const plain = makePaint(false);
 export function renderAnswer(a: Answer, p: Paint = plain): string {
   const tokens = a.tokens.input === null ? '' : ` · токены: ${a.tokens.input} → ${a.tokens.output ?? '?'}`;
   return [
-    p.dim(`штурман · ${a.model.name} · ${a.model.provider}/${a.model.model} · ушли слои: ${a.model.layers.join(', ') || 'никакие'}`),
+    p.dim(`штурман · ${a.model.name} · ${a.model.provider}/${a.model.model} · ушли слои: ${a.model.layers.join(', ') || 'никакие'} · источники: ${a.model.sources.join(', ') || 'закрыты'}`),
     '',
     a.text,
     '',

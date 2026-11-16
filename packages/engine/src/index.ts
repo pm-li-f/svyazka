@@ -39,3 +39,4 @@ export {
   type SplashEvent,
 } from './events.js';
 export { facts } from './facts.js';
+export { sourceSignals, sourcesView, type SourcesView, type TaskSource } from './sources.js';

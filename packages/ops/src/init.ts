@@ -53,6 +53,17 @@ navigator:                # штурман: модели под коротким
   models:                 # layers — какие слои можно отправлять этой модели
     claude: {provider: anthropic, model: claude-sonnet-5-5, layers: [team, pair, me]}
     kimi: {provider: moonshotai, model: kimi-k3, layers: [team, pair, me]}
+                          # чтобы модель видела данные Jira и Confluence, допиши ей sources: [jira, confluence]
+# Jira и Confluence, только чтение. Убери решётки и впиши адреса; логин и пароль — в файл ключей (sv keys init).
+# sources:
+#   jira:
+#     url: https://jira.example.com
+#     stale_days: 7         # задача в работе не двигалась столько дней — застой
+#     wip_max: 3            # больше стольких задач в работе у одного человека — сигнал
+#   confluence:
+#     url: https://wiki.example.com
+#     ttl_days: 30          # срок годности страницы-артефакта, если у неё нет своего
+#   fresh_days: 2           # снимок старше — уже устарел
 `;
 
 const README = `# Папка игры «Связка»
@@ -125,6 +136,7 @@ config.yaml           настройки и подписи
    Карту никто не рисует: \`sv map\` и экран «карта» собирают её из этих файлов.
 
 5. **Штурман.** Модели, которые отвечают на вопросы по этой папке, записаны в \`config.yaml\`, в разделе \`navigator\`. У каждой есть \`layers\`: какие слои ей можно отправлять. Ключи лежат отдельно: \`sv keys init\`.
+6. **Jira и Confluence.** Адреса серверов — в \`config.yaml\`, в разделе \`sources\`. Переход ссылается на Jira полем \`jira\` в своём файле, человек — логином в поле \`jira\`, страницы Confluence перечислены в \`team/artifacts.yaml\`. \`sv sync\` читает серверы и кладёт снимки в \`team/sources/\`; игра считает сигналы по ним. Логин и пароль в эту папку не попадают.
 
 После правок проверь папку: \`sv roster\`. Если что-то не так, команда назовёт файл и поле.
 `;

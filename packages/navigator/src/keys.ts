@@ -1,6 +1,6 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { chmodSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { type FoundKey, type Keys, keysFile, parseKeys, readSecrets } from '@svyazka/core';
 
 /**
  * Ключи поставщиков моделей. Живут вне репозитория и вне папки игры:
@@ -16,47 +16,12 @@ export const KEY_VAR = {
 } as const;
 export type ProviderId = keyof typeof KEY_VAR;
 
-export interface FoundKey {
-  value: string;
-  source: 'env' | 'file';
-}
-export type Keys = Partial<Record<string, FoundKey>>;
-
-/** Файл ключей: `~/.svyazka/keys.env`. Переменная `SVYAZKA_KEYS` задаёт другой путь. */
-export const keysFile = (env: NodeJS.ProcessEnv = process.env): string => env['SVYAZKA_KEYS'] || join(homedir(), '.svyazka', 'keys.env');
-
-/** Разбирает строки вида `ИМЯ=значение`. Пустые строки и строки с `#` пропускаются. */
-export function parseKeys(text: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim().replace(/^export\s+/, '');
-    if (!line || line.startsWith('#')) continue;
-    const eq = line.indexOf('=');
-    if (eq <= 0) continue;
-    const name = line.slice(0, eq).trim();
-    const value = line
-      .slice(eq + 1)
-      .trim()
-      .replace(/^(['"])(.*)\1$/, '$2');
-    if (/^[A-Z][A-Z0-9_]*$/.test(name) && value) out[name] = value;
-  }
-  return out;
-}
+export { keysFile, parseKeys, type FoundKey, type Keys };
 
 /** Ключи из окружения и из файла. Переменная окружения важнее файла. */
-export function readKeys(env: NodeJS.ProcessEnv = process.env, file: string = keysFile(env)): Keys {
-  const keys: Keys = {};
-  if (existsSync(file)) {
-    for (const [name, value] of Object.entries(parseKeys(readFileSync(file, 'utf8')))) keys[name] = { value, source: 'file' };
-  }
-  for (const name of Object.values(KEY_VAR)) {
-    const value = env[name]?.trim();
-    if (value) keys[name] = { value, source: 'env' };
-  }
-  return keys;
-}
+export const readKeys = (env: NodeJS.ProcessEnv = process.env, file: string = keysFile(env)): Keys => readSecrets(Object.values(KEY_VAR), env, file);
 
-const TEMPLATE = `# Ключи моделей для штурмана «Связки».
+const TEMPLATE = `# Ключи «Связки»: модели штурмана и вход в Jira и Confluence.
 # Этот файл лежит только на твоей машине. Не клади его в репозиторий и в папку игры.
 # Впиши ключ после знака «=», без кавычек и пробелов. Строки с пустым значением не учитываются.
 
@@ -65,6 +30,13 @@ ANTHROPIC_API_KEY=
 
 # Kimi: https://platform.kimi.ai → API Keys (международная площадка Moonshot)
 MOONSHOT_API_KEY=
+
+# Jira и Confluence: пользователь с правами только на чтение.
+# Адреса серверов пишутся не сюда, а в config.yaml папки игры, в раздел sources.
+JIRA_USER=
+JIRA_PASSWORD=
+CONFLUENCE_USER=
+CONFLUENCE_PASSWORD=
 `;
 
 /** Создаёт файл ключей с шаблоном, если его ещё нет. Существующий файл не трогает. */

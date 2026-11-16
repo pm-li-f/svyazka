@@ -7,7 +7,7 @@ import { currentTurn } from './turn.js';
 /** Снимок состояния для сравнения: по двум таким снимкам `events` находит, что произошло. */
 export function facts(game: Game, today: string): Facts {
   const label = (id: string) => game.config.labels[id] ?? id;
-  const name = (id: string) => game.people.find((p) => p.id === id)?.name;
+  const name = (id: string) => game.people.find((p) => p.id === id)?.name ?? game.artifacts.find((a) => a.id === id)?.title;
   const turn = currentTurn(game, today);
   const all = signals(game, today);
 

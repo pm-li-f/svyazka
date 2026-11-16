@@ -1,0 +1,194 @@
+# Снимок Jira. Его пишет «sv sync»: руками не править, следующий сбор перезапишет.
+at: 2026-11-14
+server: 11.0.1
+tasks:
+  billing-migration:
+    query: issuekey = PAY-10 OR "Epic Link" = PAY-10 OR parent = PAY-10 ORDER BY key ASC
+    total: 10
+    issues:
+      - key: PAY-10
+        summary: Миграция биллинга на новую схему
+        type: Epic
+        status: In Progress
+        category: indeterminate
+        assignee: a.sokolova
+        updated: 2026-11-13
+        due: null
+        blocked_by: []
+      - key: PAY-11
+        summary: Схема новых таблиц
+        type: Story
+        status: Done
+        category: done
+        assignee: m.levin
+        updated: 2026-10-24
+        due: null
+        blocked_by: []
+      - key: PAY-12
+        summary: Двойная запись платежей
+        type: Story
+        status: Done
+        category: done
+        assignee: m.levin
+        updated: 2026-10-30
+        due: null
+        blocked_by: []
+      - key: PAY-13
+        summary: Сверка старой и новой схемы
+        type: Story
+        status: Done
+        category: done
+        assignee: m.levin
+        updated: 2026-11-05
+        due: null
+        blocked_by: []
+      - key: PAY-14
+        summary: Перенос истории подписок
+        type: Story
+        status: In Progress
+        category: indeterminate
+        assignee: m.levin
+        updated: 2026-11-02
+        due: null
+        blocked_by: []
+      - key: PAY-15
+        summary: Переключение чтения на новую схему
+        type: Story
+        status: In Progress
+        category: indeterminate
+        assignee: m.levin
+        updated: 2026-11-13
+        due: null
+        blocked_by: []
+      - key: PAY-16
+        summary: Отчёты для бухгалтерии
+        type: Story
+        status: In Review
+        category: indeterminate
+        assignee: e.orlova
+        updated: 2026-11-12
+        due: null
+        blocked_by: []
+      - key: PAY-17
+        summary: План отката
+        type: Story
+        status: To Do
+        category: new
+        assignee: null
+        updated: 2026-10-28
+        due: 2026-11-10
+        blocked_by: []
+      - key: PAY-18
+        summary: Отключить старую схему
+        type: Story
+        status: To Do
+        category: new
+        assignee: m.levin
+        updated: 2026-11-06
+        due: null
+        blocked_by:
+          - OPS-7
+      - key: PAY-19
+        summary: Проверка внешним подрядчиком
+        type: Story
+        status: To Do
+        category: new
+        assignee: d.contractor
+        updated: 2026-11-11
+        due: null
+        blocked_by: []
+  onboarding-v2:
+    query: issuekey = ONB-1 OR "Epic Link" = ONB-1 OR parent = ONB-1 ORDER BY key ASC
+    total: 3
+    issues:
+      - key: ONB-1
+        summary: Онбординг v2
+        type: Epic
+        status: In Progress
+        category: indeterminate
+        assignee: e.orlova
+        updated: 2026-11-12
+        due: null
+        blocked_by: []
+      - key: ONB-2
+        summary: Прототип короткого пути
+        type: Story
+        status: In Progress
+        category: indeterminate
+        assignee: e.orlova
+        updated: 2026-11-13
+        due: null
+        blocked_by: []
+      - key: ONB-3
+        summary: Замер конверсии
+        type: Story
+        status: To Do
+        category: new
+        assignee: e.orlova
+        updated: 2026-11-09
+        due: null
+        blocked_by: []
+  queue-incident:
+    query: issuekey = OPS-7 OR "Epic Link" = OPS-7 OR parent = OPS-7 ORDER BY key ASC
+    total: 1
+    issues:
+      - key: OPS-7
+        summary: Очередь задач деградирует под нагрузкой
+        type: Bug
+        status: In Progress
+        category: indeterminate
+        assignee: t.aliev
+        updated: 2026-11-14
+        due: null
+        blocked_by: []
+  review-policy:
+    query: project = DOC
+    total: 3
+    issues:
+      - key: DOC-1
+        summary: Черновик правил ревью
+        type: Task
+        status: Done
+        category: done
+        assignee: e.orlova
+        updated: 2026-11-06
+        due: null
+        blocked_by: []
+      - key: DOC-2
+        summary: Собрать возражения
+        type: Task
+        status: Done
+        category: done
+        assignee: e.orlova
+        updated: 2026-11-10
+        due: null
+        blocked_by: []
+      - key: DOC-3
+        summary: Опубликовать правила
+        type: Task
+        status: Done
+        category: done
+        assignee: a.sokolova
+        updated: 2026-11-12
+        due: null
+        blocked_by: []
+  second-rope:
+    query: issuekey = GROW-5 OR "Epic Link" = GROW-5 OR parent = GROW-5 ORDER BY key ASC
+    total: 0
+    issues: []
+people:
+  anya:
+    in_progress: 1
+    open: 1
+  lena:
+    in_progress: 3
+    open: 4
+  mark:
+    in_progress: 4
+    open: 5
+  timur:
+    in_progress: 1
+    open: 1
+  you:
+    in_progress: 0
+    open: 0

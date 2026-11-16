@@ -110,7 +110,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
             {person.owns.length > 0 && <Field label="владеет">{person.owns.join(', ')}</Field>}
           </Block>
 
-          {sheet.tasks.length > 0 && (
+          {(sheet.tasks.length > 0 || sheet.jira) && (
             <Block name="tasks" title="в переходах" layer="team" who={person.name}>
               {sheet.tasks.map((t) => (
                 <div key={t.id} className="between">
@@ -120,6 +120,11 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
                   <b>{t.roles.join(' ')}</b>
                 </div>
               ))}
+              {sheet.jira && (
+                <p className="hint" data-block="sheet-jira">
+                  В Jira на {sheet.jira.at}: в работе {sheet.jira.inProgress}, не закрыто {sheet.jira.open}. Это число задач, а не оценка.
+                </p>
+              )}
             </Block>
           )}
 

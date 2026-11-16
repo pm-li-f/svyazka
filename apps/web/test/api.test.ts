@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { MockLanguageModelV4 } from 'ai/test';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { OpenModel } from '@svyazka/navigator';
+import { EXAMPLE_ISSUES, EXAMPLE_PAGES, type Fake, startFake } from '../../../packages/sources/test/fake';
 import { createApi } from '../server/api';
 import { buildState } from '../server/state';
 
@@ -198,5 +199,71 @@ describe('API', () => {
     // ход так и не начался
     const state = (await (await fetch(`${base}/api/state`)).json()) as { turn: unknown };
     expect(state.turn).toBeNull();
+  });
+});
+
+describe('источники через API', () => {
+  const example = resolve(demo, '../jira-pomnit-vse');
+  const good = { user: 'svyazka-ro', password: 'correct horse' };
+  let fake: Fake | undefined;
+  let api: Server | undefined;
+  let dir: string | undefined;
+
+  /** API поверх копии примера, адреса источников в которой ведут на подставной сервер. */
+  async function startWithSources(creds = { jira: good, confluence: good }): Promise<{ base: string; dir: string; fake: Fake }> {
+    fake = await startFake({ issues: EXAMPLE_ISSUES, pages: EXAMPLE_PAGES, basic: false });
+    dir = mkdtempSync(join(tmpdir(), 'svyazka-web-src-'));
+    cpSync(example, dir, { recursive: true });
+    for (const file of ['config.yaml', 'team/artifacts.yaml']) {
+      writeFileSync(join(dir, file), readFileSync(join(dir, file), 'utf8').replace(/https:\/\/(jira|wiki)\.example\.test/g, fake.url));
+    }
+    const probe = createServer();
+    await new Promise<void>((r) => probe.listen(0, '127.0.0.1', r));
+    const port = (probe.address() as AddressInfo).port;
+    await new Promise((r) => probe.close(r));
+    const handler = createApi({ dir, port, today: () => '2026-11-20', navigator: { keys: () => ({}) }, sources: { creds: () => creds } });
+    api = createServer((req, res) => void handler(req, res).then((handled) => handled || res.writeHead(404).end()));
+    await new Promise<void>((r) => api?.listen(port, '127.0.0.1', r));
+    return { base: `http://127.0.0.1:${port}`, dir, fake };
+  }
+
+  afterEach(async () => {
+    await new Promise((r) => (api ? api.close(r) : r(undefined)));
+    await fake?.close();
+    if (dir) rmSync(dir, { recursive: true, force: true });
+    api = fake = dir = undefined;
+  });
+
+  it('состояние несёт снимок источников, но не логин и не пароль', async () => {
+    const { base } = await startWithSources();
+    const text = await (await fetch(`${base}/api/state`)).text();
+    const state = JSON.parse(text) as ReturnType<typeof buildState>;
+    expect(state.sources.creds).toEqual({ jira: true, confluence: true });
+    expect(state.sources.jira).toMatchObject({ at: '2026-11-14', age: 6, stale: true });
+    expect(state.sources.jira.tasks.find((t) => t.task === 'billing-migration')).toMatchObject({ done: 3, total: 9 });
+    expect(state.signals.find((s) => s.code === 'sources' && s.target === 'jira')?.text).toContain('сняты 6 дн. назад');
+    expect(text).not.toContain('correct horse');
+    expect(text).not.toContain('svyazka-ro');
+  });
+
+  it('кнопка «снять данные» обновляет снимок и только читает сервер', async () => {
+    const { base, dir, fake } = await startWithSources();
+    const result = (await (await post(base, '/api/sources/sync', { only: 'jira' })).json()) as { jira?: { report?: { auth: string; issues: number } }; confluence?: unknown };
+    expect(result.jira?.report).toMatchObject({ auth: 'session', issues: 17 });
+    expect(result.confluence).toBeUndefined();
+    expect(readFileSync(join(dir, 'team/sources/jira.yaml'), 'utf8')).toContain('at: 2026-11-20');
+    expect(fake.log.filter((l) => l.method !== 'GET' && l.path !== '/rest/auth/1/session')).toEqual([]);
+    const state = (await (await fetch(`${base}/api/state`)).json()) as ReturnType<typeof buildState>;
+    expect(state.sources.jira).toMatchObject({ age: 0, stale: false });
+    expect(state.signals.some((s) => s.code === 'sources' && s.target === 'jira')).toBe(false);
+  });
+
+  it('без входа и с неверным запросом объясняет, в чём дело', async () => {
+    const { base, fake } = await startWithSources({ jira: {} as typeof good, confluence: good });
+    const result = (await (await post(base, '/api/sources/sync', { only: 'jira' })).json()) as { jira?: { error?: string } };
+    expect(result.jira?.error).toContain('JIRA_USER');
+    expect(fake.log).toEqual([]);
+    expect((await post(base, '/api/sources/sync', { only: 'github' })).status).toBe(400);
+    expect((await fetch(`${base}/api/sources/sync`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status).toBe(403);
   });
 });

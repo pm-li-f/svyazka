@@ -1,18 +1,27 @@
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import type { Game, Layer } from '@svyazka/core';
-import { attentionSplit, budgetLimit, mapView, roster, sheetView, signals, skillMatrix, strategy } from '@svyazka/engine';
+import type { Game, Layer, SourceName } from '@svyazka/core';
+import { attentionSplit, budgetLimit, mapView, roster, sheetView, signals, skillMatrix, sourcesView, strategy } from '@svyazka/engine';
 
 /**
  * Оставляет в игре только те слои, которые можно показать модели.
  * Всё, что отдают инструменты, считается уже по урезанной игре: закрытый слой
  * не может попасть в ответ даже косвенно — например, нагрузкой в тексте сигнала.
+ *
+ * То же с источниками: снимок Jira или Confluence, не открытый этой модели, вырезается
+ * вместе с настройкой источника — для модели его как будто нет.
  */
-export function capGame(game: Game, layers: readonly Layer[]): Game {
+export function capGame(game: Game, layers: readonly Layer[], sources: readonly SourceName[] = []): Game {
   const pair = layers.includes('pair');
   const me = layers.includes('me');
+  const jira = sources.includes('jira');
+  const confluence = sources.includes('confluence');
+  const { jira: jiraConfig, confluence: confluenceConfig, ...restSources } = game.config.sources;
   return {
     ...game,
+    config: { ...game.config, sources: { ...restSources, ...(jira && jiraConfig ? { jira: jiraConfig } : {}), ...(confluence && confluenceConfig ? { confluence: confluenceConfig } : {}) } },
+    sources: { ...(jira && game.sources.jira ? { jira: game.sources.jira } : {}), ...(confluence && game.sources.confluence ? { confluence: game.sources.confluence } : {}) },
+    artifacts: confluence ? game.artifacts : [],
     sheets: pair ? game.sheets : {},
     journals: pair ? game.journals : {},
     privates: me ? game.privates : {},
@@ -24,8 +33,8 @@ export function capGame(game: Game, layers: readonly Layer[]): Game {
 const deepest = (layers: readonly Layer[]): Layer => (layers.includes('me') ? 'me' : layers.includes('pair') ? 'pair' : 'team');
 
 /** Инструменты игры для модели. Только чтение: штурман ничего не меняет в папке игры. */
-export function gameTools(full: Game, today: string, layers: readonly Layer[]): ToolSet {
-  const game = capGame(full, layers);
+export function gameTools(full: Game, today: string, layers: readonly Layer[], sources: readonly SourceName[] = []): ToolSet {
+  const game = capGame(full, layers, sources);
   const personId = z.string().describe('Идентификатор человека из списка отряда, например mark');
   const none = z.object({});
 
@@ -38,7 +47,7 @@ export function gameTools(full: Game, today: string, layers: readonly Layer[]): 
     }),
     signals: tool({
       description:
-        'Сигналы хода: на что стоит потратить внимание. Навык на одном человеке, устаревший контекст, нарушения RACI, потолок внимания, погода. Отсортированы по важности.',
+        'Сигналы хода: на что стоит потратить внимание. Навык на одном человеке, устаревший контекст, нарушения RACI, потолок внимания, погода; если открыты источники — застой, просрочка и расхождения с Jira, устаревшие страницы Confluence. Отсортированы по важности.',
       inputSchema: none,
       execute: async () => signals(game, today),
     }),
@@ -82,6 +91,12 @@ export function gameTools(full: Game, today: string, layers: readonly Layer[]): 
       description: 'Агенты отряда: зачем каждый, какой человек за него отвечает, его отчёты с датами.',
       inputSchema: none,
       execute: async () => game.agents,
+    }),
+    sources: tool({
+      description:
+        'Что видно в Jira и Confluence по последнему снимку: сколько задач за каждым переходом закрыто, в работе, стоит, просрочено и ждёт других; у кого задачи в работе; сколько незакрытых задач у людей во всей Jira; когда и кем менялись страницы-артефакты. У снимка есть дата — называй её. Пусто, если источники этой модели закрыты.',
+      inputSchema: none,
+      execute: async () => (sources.length === 0 ? { closed: 'Данные Jira и Confluence этой модели не открыты.' } : sourcesView(game, today)),
     }),
     turns: tool({
       description:

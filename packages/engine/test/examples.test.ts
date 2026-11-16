@@ -24,8 +24,8 @@ const by = (name: string) => {
 };
 
 describe('примеры', () => {
-  it('их шесть, и в каждом от пяти до восьми человек', () => {
-    expect(names.sort()).toEqual(['agenty-razberutsya', 'demo', 'ezhik-v-tumane', 'kak-po-maslu', 'svezhaya-krov', 'this-is-fine']);
+  it('их семь, и в каждом от пяти до восьми человек', () => {
+    expect(names.sort()).toEqual(['agenty-razberutsya', 'demo', 'ezhik-v-tumane', 'jira-pomnit-vse', 'kak-po-maslu', 'svezhaya-krov', 'this-is-fine']);
     for (const name of names) {
       const people = game(name).people.length;
       expect(people, name).toBeGreaterThanOrEqual(5);

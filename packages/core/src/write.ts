@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { type Document, isSeq, parseDocument, stringify } from 'yaml';
-import { Journal, Turn } from './schema.js';
+import { ConfluenceSnapshot, JiraSnapshot, Journal, Turn } from './schema.js';
 
 /**
  * Запись в папку игры. Правим только YAML-шапку: свободные заметки под ней и
@@ -67,4 +67,19 @@ export function addJournalEntry(
     if (isSeq(entries)) entries.items.unshift(doc.createNode(entry));
     else doc.set('entries', [entry]);
   });
+}
+
+const SNAPSHOT = { jira: JiraSnapshot, confluence: ConfluenceSnapshot } as const;
+const SNAPSHOT_HEAD = {
+  jira: '# Снимок Jira. Его пишет «sv sync»: руками не править, следующий сбор перезапишет.\n',
+  confluence: '# Снимок Confluence. Его пишет «sv sync»: руками не править, следующий сбор перезапишет.\n',
+} as const;
+
+/** Сохраняет снимок источника в `team/sources/<источник>.yaml`. */
+export function saveSnapshot(root: string, source: 'jira', data: JiraSnapshot): void;
+export function saveSnapshot(root: string, source: 'confluence', data: ConfluenceSnapshot): void;
+export function saveSnapshot(root: string, source: 'jira' | 'confluence', data: unknown): void {
+  const path = join(root, 'team', 'sources', `${source}.yaml`);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, SNAPSHOT_HEAD[source] + stringify(SNAPSHOT[source].parse(data), YAML_OUT));
 }

@@ -8,7 +8,7 @@ import { gameTools } from './tools.js';
 export interface Answer {
   text: string;
   /** Какая модель отвечала и какие слои ей были открыты. */
-  model: Pick<ModelSpec, 'name' | 'provider' | 'model' | 'layers'>;
+  model: Pick<ModelSpec, 'name' | 'provider' | 'model' | 'layers' | 'sources'>;
   /** Какие инструменты игры она вызывала, по порядку. */
   tools: string[];
   tokens: { input: number | null; output: number | null };
@@ -25,9 +25,9 @@ export async function ask(game: Game, today: string, spec: ModelSpec, model: Lan
   try {
     const result = await generateText({
       model,
-      instructions: instructions(game, today, spec.layers),
+      instructions: instructions(game, today, spec.layers, spec.sources),
       prompt: text,
-      tools: gameTools(game, today, spec.layers),
+      tools: gameTools(game, today, spec.layers, spec.sources),
       stopWhen: isStepCount(MAX_STEPS),
       timeout: TIMEOUT_MS,
       maxRetries: 1,
@@ -43,7 +43,7 @@ export async function ask(game: Game, today: string, spec: ModelSpec, model: Lan
     }
     return {
       text: result.text.trim(),
-      model: { name: spec.name, provider: spec.provider, model: spec.model, layers: spec.layers },
+      model: { name: spec.name, provider: spec.provider, model: spec.model, layers: spec.layers, sources: spec.sources },
       tools,
       tokens: { input: result.totalUsage.inputTokens ?? null, output: result.totalUsage.outputTokens ?? null },
     };

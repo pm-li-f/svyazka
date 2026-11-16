@@ -3,14 +3,15 @@ import { capStreak } from './attention.js';
 import { freshness } from './freshness.js';
 import { raciLint } from './raci.js';
 import { skillCoverage } from './skills.js';
+import { sourceSignals } from './sources.js';
 
 export type Severity = 'crit' | 'warn' | 'lint' | 'info';
 
 export interface Signal {
   severity: Severity;
-  /** Машинный код: spof, stale-context, stale-sheet, raci, attention, weather. */
+  /** Машинный код: spof, stale-context, stale-sheet, raci, attention, weather; из источников — jira-stall, jira-overdue, jira-blocked, jira-drift, jira-link, jira-load, stale-doc, sources. */
   code: string;
-  /** О ком или о чём сигнал: id человека, навыка или перехода. */
+  /** О ком или о чём сигнал: id человека, навыка, перехода или артефакта. */
   target: string;
   text: string;
 }
@@ -111,6 +112,8 @@ export function signals(game: Game, today: string): Signal[] {
       text: `Потолок внимания — уже ${streak}-й ход подряд. Это сигнал на тебя самого.`,
     });
   }
+
+  out.push(...sourceSignals(game, today));
 
   const w = game.map.weather;
   if (w.stage === 'forming' || w.stage === 'storming') {

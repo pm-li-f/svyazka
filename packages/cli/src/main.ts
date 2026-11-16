@@ -3,12 +3,14 @@ import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { GameLoadError, Layer, loadGame } from '@svyazka/core';
 import { NavigatorError } from '@svyazka/navigator';
+import { SourceError } from '@svyazka/sources';
 import { InitError, localToday } from '@svyazka/ops';
 import { askInit, parsePerson, runInit } from './init.js';
 import { makePaint } from './format.js';
 import { renderMap } from './map.js';
 import { askCmd, keysInit, keysStatus, prepCmd } from './navigator.js';
 import { renderRaci, renderRoster, renderSheet, renderSignals, renderSkills } from './render.js';
+import { sourcesCheck, sourcesStatus, syncCmd } from './sources.js';
 import { act, budgetHint, chargeSheetRead, decide, oneOnOne, turnEnd, turnShow, turnStart } from './turn.js';
 
 const HELP = `sv — «Связка» в терминале
@@ -39,6 +41,11 @@ const HELP = `sv — «Связка» в терминале
   sv keys                   какие ключи моделей найдены
   sv keys init              создать файл ключей
   sv keys --check           проверить ключи пробным запросом
+
+Источники: Jira и Confluence, только чтение
+  sv sources                что настроено и насколько свежи данные
+  sv sources check          проверить вход на серверы
+  sv sync [jira|confluence] снять данные и записать снимок в папку игры
 
 Параметры
   --dir <путь>              папка игры (по умолчанию $SVYAZKA_DIR или текущая)
@@ -195,6 +202,22 @@ try {
       else if (!arg) console.log(await keysStatus(dir, values.check === true, paint));
       else fail('sv keys [init] [--check]');
       break;
+    case 'sources':
+      if (arg === 'check') {
+        const check = await sourcesCheck(dir, paint);
+        console.log(check.text);
+        if (!check.ok) process.exit(1);
+      } else if (!arg) console.log(sourcesStatus(dir, today, paint));
+      else fail('sv sources [check]');
+      break;
+    case 'sync': {
+      if (arg && arg !== 'jira' && arg !== 'confluence') fail('sv sync [jira|confluence]');
+      if (process.stderr.isTTY) console.error(paint.dim('читаю источники…'));
+      const synced = await syncCmd({ dir, today, ...(arg ? { only: [arg as 'jira' | 'confluence'] } : {}) }, paint);
+      console.log(synced.text);
+      if (!synced.ok) process.exit(1);
+      break;
+    }
     case 'decide':
       if (!arg) fail('sv decide "<текст>": укажи, что решил и почему');
       console.log(decide(dir, today, positionals.slice(1).join(' '), paint));
@@ -203,7 +226,7 @@ try {
       fail(`неизвестная команда «${command}»\n\n${HELP}`);
   }
 } catch (e) {
-  if (e instanceof GameLoadError || e instanceof InitError || e instanceof NavigatorError) fail(e.message, 1);
+  if (e instanceof GameLoadError || e instanceof InitError || e instanceof NavigatorError || e instanceof SourceError) fail(e.message, 1);
   if (e instanceof Error) fail(e.message, 1);
   throw e;
 }

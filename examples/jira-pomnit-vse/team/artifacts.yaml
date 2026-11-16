@@ -1,0 +1,20 @@
+# Артефакты, которые живут в Confluence. Игра их не ведёт, а следит, не устарели ли.
+artifacts:
+  - id: charter
+    title: Устав и видение
+    confluence: 1001
+    ttl_days: 180
+  - id: quarter-goals
+    title: Цели на квартал
+    confluence: https://wiki.example.test/pages/viewpage.action?pageId=1002
+  - id: roadmap
+    title: Роадмап
+    confluence: 1003
+  - id: postmortems
+    title: Постмортемы
+    confluence: https://wiki.example.test/display/ENG/Postmortems
+    ttl_days: 60
+  - id: risk-register
+    title: Реестр рисков
+    confluence: 1999
+    note: Страницу удалили при переезде пространства

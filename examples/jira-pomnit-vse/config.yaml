@@ -1,0 +1,47 @@
+# Настройки игры. Числа — прикидки, калибруются после пары недель игры.
+ttl_days: 14              # срок годности контекста о человеке
+attention:
+  cap: 10                 # потолок дневного бюджета
+  over_usual: 2           # не выше обычного плюс столько
+  window_days: 14         # за сколько дней считается «обычное»
+  cap_streak: 3           # столько ходов подряд на потолке — сигнал на тебя самого
+action_costs:
+  read-sheet: 1
+  resolve-signal: 1
+  one-on-one: 2
+  route-block: 3
+raci:
+  accountable_max: 2      # за сколько активных переходов можно отвечать одновременно
+signals:
+  load_crit: 85           # нагрузка, с которой единственный держатель навыка — критический сигнал
+labels:                   # подписи для людей
+  databases: Базы данных
+  hardware: Железо
+  architecture: Архитектура
+  interfaces: Интерфейсы
+  infrastructure: Инфраструктура
+  agents: Работа с агентами
+  verification: Проверка результата
+  data-metrics: Данные и метрики
+  systems-thinking: Системное мышление
+  process-vision: Видение процессов
+  product-taste: Продуктовый вкус
+  feedback: Обратная связь
+  read-sheet: прочитать лист
+  resolve-signal: разобрать сигнал
+  one-on-one: провести 1on1
+  route-block: поработать над маршрутом
+navigator:                # штурман: модели под короткими именами
+  default: claude         # какая отвечает, если не указать --model
+  models:                 # layers — какие слои можно отправлять этой модели
+    claude: {provider: anthropic, model: claude-sonnet-5-5, layers: [team, pair, me]}
+    kimi: {provider: moonshotai, model: kimi-k3, layers: [team, pair, me]}
+sources:                  # внешние источники: адреса и пороги. Логин и пароль — только в файле ключей
+  jira:
+    url: https://jira.example.test
+    stale_days: 7         # задача в работе не двигалась столько дней — застой
+    wip_max: 3            # больше стольких задач в работе у одного человека — сигнал
+  confluence:
+    url: https://wiki.example.test
+    ttl_days: 30          # срок годности страницы-артефакта, если у неё нет своего
+  fresh_days: 2           # снимок старше — уже устарел

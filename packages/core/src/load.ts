@@ -4,8 +4,11 @@ import { parse as parseYaml } from 'yaml';
 import type { z } from 'zod';
 import {
   Agent,
+  Artifacts,
   Config,
+  ConfluenceSnapshot,
   GameMap,
+  JiraSnapshot,
   Journal,
   Person,
   Private,
@@ -103,6 +106,12 @@ export function loadGame(root: string): Game {
   const tasks = readAll(join(root, 'team', 'tasks'), Task);
   const turns = readAll(join(root, 'turns'), Turn);
 
+  // Необязательные файлы: артефакты и снимки источников.
+  const optional = <S extends z.ZodType>(path: string, schema: S): z.infer<S> | undefined => (existsSync(path) ? read(path, schema) : undefined);
+  const artifacts = optional(join(root, 'team', 'artifacts.yaml'), Artifacts)?.artifacts ?? [];
+  const jira = optional(join(root, 'team', 'sources', 'jira.yaml'), JiraSnapshot);
+  const confluence = optional(join(root, 'team', 'sources', 'confluence.yaml'), ConfluenceSnapshot);
+
   const sheets: Record<string, Sheet> = {};
   const journals: Record<string, Journal> = {};
   for (const id of listDirs(join(root, 'pair'))) {
@@ -141,6 +150,12 @@ export function loadGame(root: string): Game {
   for (const a of agents) {
     need(`team/agents/${a.id}.md`, a.accountable, personIds, 'accountable (должен быть человек)');
   }
+  for (const dup of duplicates(artifacts.map((a) => a.id))) {
+    issues.push({ file: 'team/artifacts.yaml', message: `идентификатор «${dup}» встречается дважды` });
+  }
+  for (const dup of duplicates([...people, ...agents].flatMap((x) => (x.jira ? [x.jira] : [])))) {
+    issues.push({ file: 'team', message: `логин Jira «${dup}» записан у двоих` });
+  }
   const campIds = new Set(map?.camps.map((c) => c.id) ?? []);
   if (map) need('team/map.yaml', map.target, campIds, 'target');
   for (const t of tasks) {
@@ -162,7 +177,19 @@ export function loadGame(root: string): Game {
   }
 
   if (issues.length || !config || !map) throw new GameLoadError(issues);
-  return { config, map, people, agents, tasks, sheets, journals, privates, turns };
+  return {
+    config,
+    map,
+    people,
+    agents,
+    tasks,
+    sheets,
+    journals,
+    privates,
+    turns,
+    artifacts,
+    sources: { ...(jira ? { jira } : {}), ...(confluence ? { confluence } : {}) },
+  };
 }
 
 function duplicates(ids: string[]): string[] {

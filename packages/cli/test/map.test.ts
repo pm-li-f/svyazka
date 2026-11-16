@@ -60,12 +60,12 @@ describe('ответ штурмана в терминале', () => {
     const { renderAnswer } = await import('../src/index.js');
     const out = renderAnswer({
       text: 'Первым — с Тимуром.',
-      model: { name: 'kimi', provider: 'moonshotai', model: 'kimi-k3', layers: ['team'] },
+      model: { name: 'kimi', provider: 'moonshotai', model: 'kimi-k3', layers: ['team'], sources: [] },
       tools: ['roster', 'sheet(timur)'],
       tokens: { input: 1200, output: 80 },
     });
     expect(out.split('\n')).toEqual([
-      'штурман · kimi · moonshotai/kimi-k3 · ушли слои: team',
+      'штурман · kimi · moonshotai/kimi-k3 · ушли слои: team · источники: закрыты',
       '',
       'Первым — с Тимуром.',
       '',

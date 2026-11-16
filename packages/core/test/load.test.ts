@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { GameLoadError, loadGame, Navigator } from '../src/index.js';
+import { GameLoadError, loadGame, Navigator, saveSnapshot } from '../src/index.js';
 
 const demo = resolve(dirname(fileURLToPath(import.meta.url)), '../../../examples/demo');
 
@@ -36,10 +36,10 @@ describe('пример данных', () => {
     // Старая запись с одной моделью тоже читается.
     expect(Navigator.parse({ provider: 'moonshotai', model: 'kimi-k2.6', cloud_layers: ['team'] })).toEqual({
       default: 'kimi',
-      models: { kimi: { provider: 'moonshotai', model: 'kimi-k2.6', layers: ['team'] } },
+      models: { kimi: { provider: 'moonshotai', model: 'kimi-k2.6', layers: ['team'], sources: [] } },
     });
     expect(() => Navigator.parse({ default: 'gpt', models: {} })).toThrow(/такой модели нет/);
-    expect(g.config.navigator.models['kimi']).toEqual({ provider: 'moonshotai', model: 'kimi-k3', layers: ['team', 'pair', 'me'] });
+    expect(g.config.navigator.models['kimi']).toEqual({ provider: 'moonshotai', model: 'kimi-k3', layers: ['team', 'pair', 'me'], sources: [] });
   });
 
   it('содержит случаи, которые должен поймать линтер на следующем шаге', () => {
@@ -92,5 +92,68 @@ describe('проверка папки', () => {
     const dir = copyOfDemo();
     edit(dir, 'team/agents/reviewer.md', 'accountable: anya', 'accountable: prototyper');
     expect(() => loadGame(dir)).toThrow(/accountable/);
+  });
+});
+
+describe('ссылки на источники', () => {
+  const issues = (dir: string): string[] => {
+    try {
+      loadGame(dir);
+      return [];
+    } catch (e) {
+      if (e instanceof GameLoadError) return e.issues.map((i) => `${i.file}: ${i.message}`);
+      throw e;
+    }
+  };
+
+  it('без источников игра та же: настроек, артефактов и снимков нет', () => {
+    const g = loadGame(demo);
+    expect(g.config.sources).toEqual({ fresh_days: 2 });
+    expect(g.artifacts).toEqual([]);
+    expect(g.sources).toEqual({});
+  });
+
+  it('ссылка перехода — ключ, несколько ключей или свой JQL', () => {
+    const dir = copyOfDemo();
+    edit(dir, 'team/tasks/billing-migration.md', 'raci:', 'jira: PAY-10\nraci:');
+    edit(dir, 'team/tasks/queue-incident.md', 'raci:', 'jira: [OPS-7, OPS-8]\nraci:');
+    edit(dir, 'team/tasks/review-policy.md', 'raci:', 'jira: {jql: "project = DOC"}\nraci:');
+    const g = loadGame(dir);
+    expect(g.tasks.flatMap((t) => (t.jira ? [t.jira] : []))).toEqual(['PAY-10', ['OPS-7', 'OPS-8'], { jql: 'project = DOC' }]);
+    edit(dir, 'team/tasks/billing-migration.md', 'jira: PAY-10', 'jira: pay-10');
+    expect(issues(dir).join(' ')).toContain('team/tasks/billing-migration.md');
+  });
+
+  it('адрес источника — без логина и пароля; пороги берутся по умолчанию', () => {
+    const dir = copyOfDemo();
+    writeFileSync(join(dir, 'config.yaml'), readFileSync(join(dir, 'config.yaml'), 'utf8') + 'sources:\n  jira:\n    url: https://jira.example.test/jira\n');
+    expect(loadGame(dir).config.sources.jira).toEqual({ url: 'https://jira.example.test/jira', auth: 'auto', stale_days: 7, wip_max: 3, blocks_link: 'Blocks', max_issues: 300 });
+    edit(dir, 'config.yaml', 'https://jira.example.test/jira', 'https://reader:secret@jira.example.test');
+    const found = issues(dir).join(' ');
+    expect(found).toContain('логин и пароль в адрес не пишем');
+    expect(found).not.toContain('secret');
+  });
+
+  it('артефакты: номер страницы читается и числом, повтор id и двойной логин Jira ловятся', () => {
+    const dir = copyOfDemo();
+    writeFileSync(join(dir, 'team/artifacts.yaml'), 'artifacts:\n  - {id: charter, title: Устав, confluence: 1001}\n  - {id: goals, title: Цели, confluence: "https://wiki.example.test/display/P/G", ttl_days: 90}\n');
+    expect(loadGame(dir).artifacts).toEqual([
+      { id: 'charter', title: 'Устав', confluence: '1001' },
+      { id: 'goals', title: 'Цели', confluence: 'https://wiki.example.test/display/P/G', ttl_days: 90 },
+    ]);
+    edit(dir, 'team/artifacts.yaml', 'id: goals', 'id: charter');
+    edit(dir, 'team/people/mark.md', 'role: backend', 'role: backend\njira: same');
+    edit(dir, 'team/people/lena.md', 'name: Лена', 'name: Лена\njira: same');
+    expect(issues(dir)).toEqual(['team/artifacts.yaml: идентификатор «charter» встречается дважды', 'team: логин Jira «same» записан у двоих']);
+  });
+
+  it('снимок пишется с пометкой, читается обратно, а испорченный называется по имени файла', () => {
+    const dir = copyOfDemo();
+    saveSnapshot(dir, 'jira', { at: '2026-11-14', tasks: {}, people: { mark: { in_progress: 2, open: 3 } } });
+    const file = join(dir, 'team/sources/jira.yaml');
+    expect(readFileSync(file, 'utf8').startsWith('# Снимок Jira.')).toBe(true);
+    expect(loadGame(dir).sources.jira?.people['mark']).toEqual({ in_progress: 2, open: 3 });
+    writeFileSync(file, 'at: вчера\n');
+    expect(issues(dir).join(' ')).toContain('team/sources/jira.yaml: at:');
   });
 });

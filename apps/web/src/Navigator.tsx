@@ -44,7 +44,7 @@ export function ModelPicker({ nav, model, onPick }: { nav: Models; model: string
           className={`btn seg ${m.name === model ? 'on' : ''}`}
           aria-pressed={m.name === model}
           disabled={!m.ready}
-          title={m.ready ? `${m.provider}/${m.model} · уходят слои: ${m.layers.join(', ') || 'никакие'}` : `Нет ключа ${m.keyVar}: sv keys init`}
+          title={m.ready ? `${m.provider}/${m.model} · уходят слои: ${m.layers.join(', ') || 'никакие'} · источники: ${m.sources.join(', ') || 'закрыты'}` : `Нет ключа ${m.keyVar}: sv keys init`}
           onClick={() => onPick(m.name)}
         >
           {m.name}
@@ -90,7 +90,8 @@ export function NavigatorAnswer({
         <>
           <p className="navigator-text">{answer.text}</p>
           <p className="hint">
-            {answer.model.name} · {answer.model.provider}/{answer.model.model} · ушли слои: {answer.model.layers.join(', ') || 'никакие'} ·
+            {answer.model.name} · {answer.model.provider}/{answer.model.model} · ушли слои: {answer.model.layers.join(', ') || 'никакие'} · источники:{' '}
+            {answer.model.sources.join(', ') || 'закрыты'} ·
             смотрел: {answer.tools.join(', ') || 'ничего'}
           </p>
         </>

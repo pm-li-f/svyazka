@@ -1,6 +1,7 @@
 import type { Layer } from '@svyazka/core';
 import type { SheetView } from '@svyazka/engine';
 import type { Answer } from '@svyazka/navigator';
+import type { SyncResult } from '@svyazka/sources';
 import type { StateView } from '../server/state';
 
 export type { Answer, Layer, SheetView, StateView };
@@ -27,4 +28,5 @@ export const api = {
   ask: (question: string, model?: string) => request<Answer>('POST', '/api/navigator/ask', { question, model }),
   prep: (id: string, model?: string) => request<Answer>('POST', '/api/navigator/prep', { id, model }),
   decide: (text: string) => request<{ ok: true }>('POST', '/api/decide', { text }),
+  sync: (only?: 'jira' | 'confluence') => request<SyncResult>('POST', '/api/sources/sync', { only }),
 };

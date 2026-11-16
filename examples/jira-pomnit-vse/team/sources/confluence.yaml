@@ -1,0 +1,37 @@
+# Снимок Confluence. Его пишет «sv sync»: руками не править, следующий сбор перезапишет.
+at: 2026-11-14
+pages:
+  charter:
+    page: "1001"
+    title: Устав и видение
+    space: PROD
+    updated: 2026-08-20
+    by: Ты
+    version: 7
+    url: https://wiki.example.test/pages/viewpage.action?pageId=1001
+  quarter-goals:
+    page: "1002"
+    title: Цели на квартал
+    space: PROD
+    updated: 2026-09-28
+    by: Ты
+    version: 4
+    url: https://wiki.example.test/pages/viewpage.action?pageId=1002
+  roadmap:
+    page: "1003"
+    title: Роадмап
+    space: PROD
+    updated: 2026-11-10
+    by: Аня
+    version: 21
+    url: https://wiki.example.test/pages/viewpage.action?pageId=1003
+  postmortems:
+    page: "1004"
+    title: Postmortems
+    space: ENG
+    updated: 2026-11-13
+    by: Тимур
+    version: 12
+    url: https://wiki.example.test/pages/viewpage.action?pageId=1004
+  risk-register:
+    error: страница не найдена, или у пользователя нет к ней доступа

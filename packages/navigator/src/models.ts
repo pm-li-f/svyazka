@@ -1,7 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createMoonshotAI } from '@ai-sdk/moonshotai';
 import type { LanguageModel } from 'ai';
-import type { Config, Layer, NavigatorModel } from '@svyazka/core';
+import type { Config, Layer, NavigatorModel, SourceName } from '@svyazka/core';
 import { KEY_VAR, type Keys } from './keys.js';
 
 /** Ошибка штурмана с текстом для человека. */
@@ -18,6 +18,8 @@ export interface ModelSpec {
   provider: NavigatorModel['provider'];
   model: string;
   layers: Layer[];
+  /** Данные каких источников можно отправлять этой модели. */
+  sources: SourceName[];
   baseUrl: string | null;
   keyVar: string;
 }
@@ -28,6 +30,7 @@ const spec = (name: string, m: NavigatorModel): ModelSpec => ({
   model: m.model,
   // Порядок слоёв всегда один и тот же, как бы их ни записали в настройках.
   layers: (['team', 'pair', 'me'] as const).filter((l) => m.layers.includes(l)),
+  sources: (['jira', 'confluence'] as const).filter((s) => m.sources.includes(s)),
   baseUrl: m.base_url ?? null,
   keyVar: KEY_VAR[m.provider],
 });

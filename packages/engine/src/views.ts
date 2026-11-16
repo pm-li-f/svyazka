@@ -38,6 +38,8 @@ export interface SheetView {
   };
   craft: { skill: string; label: string; level: 1 | 2 | 3; agreed: string }[];
   tasks: { id: string; title: string; terrain: Task['terrain']; roles: Role[] }[];
+  /** Незакрытые задачи человека в Jira по последнему снимку. Это видит весь отряд и в самой Jira. */
+  jira: { at: string; inProgress: number; open: number } | null;
   /** Слой «человек и CPTO». Отсутствует, если показываем только слой отряда. */
   pair?: {
     state: { energy: number; load: number; note: string | null; at: string; daysAgo: number; fresh: boolean } | null;
@@ -64,6 +66,8 @@ export function sheetView(game: Game, id: string, today: string, upTo: Layer = '
   const label = (k: string) => game.config.labels[k] ?? k;
   const name = (k: string) => game.people.find((p) => p.id === k)?.name ?? k;
 
+  const jiraLoad = game.sources.jira?.people[id];
+
   const view: SheetView = {
     upTo,
     person: {
@@ -84,6 +88,7 @@ export function sheetView(game: Game, id: string, today: string, upTo: Layer = '
       .filter((t) => t.status !== 'done')
       .map((t) => ({ id: t.id, title: t.title, terrain: t.terrain, roles: rolesOf(t, id) }))
       .filter((t) => t.roles.length > 0),
+    jira: jiraLoad ? { at: (game.sources.jira as { at: string }).at, inProgress: jiraLoad.in_progress, open: jiraLoad.open } : null,
   };
 
   if (reaches(upTo, 'pair')) {

@@ -176,6 +176,65 @@ describe('слои', () => {
   });
 });
 
+describe('источники', () => {
+  const withJira = () => loadGame(resolve(demo, '../jira-pomnit-vse'));
+  /** Строки, которые есть только в снимках Jira и Confluence. */
+  const JIRA_ONLY = ['PAY-14', 'd.contractor', 'jira-stall', 'одновременно в работе'];
+  const WIKI_ONLY = ['Цели на квартал', 'wiki.example.test', 'stale-doc'];
+  const DAY = '2026-11-14';
+
+  const everything = async (sources: ('jira' | 'confluence')[]): Promise<string> => {
+    const tools = gameTools(withJira(), DAY, ['team', 'pair', 'me'], sources);
+    const out: string[] = [instructions(withJira(), DAY, ['team', 'pair', 'me'], sources)];
+    for (const [name, t] of Object.entries(tools)) {
+      const input = name === 'sheet' ? { id: 'mark' } : name === 'turns' ? { last: 5 } : {};
+      out.push(JSON.stringify(await (t as { execute: (i: object, o: object) => Promise<unknown> }).execute(input, { toolCallId: 't', messages: [] })));
+    }
+    return out.join('\n');
+  };
+
+  it('в примере источники закрыты обеим моделям', () => {
+    expect(listModels(withJira().config).map((m) => [m.name, m.sources])).toEqual([
+      ['claude', []],
+      ['kimi', []],
+    ]);
+  });
+
+  it('закрытый источник не попадает ни в один инструмент и ни в один сигнал', async () => {
+    const closed = await everything([]);
+    for (const text of [...JIRA_ONLY, ...WIKI_ONLY]) expect(closed, text).not.toContain(text);
+    expect(closed).toContain('Данные Jira и Confluence тебе не открыты');
+
+    const jira = await everything(['jira']);
+    for (const text of JIRA_ONLY) expect(jira, text).toContain(text);
+    for (const text of WIKI_ONLY) expect(jira, text).not.toContain(text);
+
+    const both = await everything(['jira', 'confluence']);
+    for (const text of [...JIRA_ONLY, ...WIKI_ONLY]) expect(both, text).toContain(text);
+    // Заголовки задач модели не уходят даже при открытом источнике: ей хватает ключей и чисел.
+    expect(both).not.toContain('Перенос истории подписок');
+  });
+
+  it('модели без источников данные Jira не уходят, и ответ это подписывает', async () => {
+    const game = withJira();
+    const model = new MockLanguageModelV4({ doGenerate: [call('sources', {}), call('signals', {}, 2), call('sheet', { id: 'mark' }, 3), say('По данным игры.')] });
+    const answer = await ask(game, DAY, resolveModel(game.config, 'kimi'), model, 'Что с миграцией биллинга?');
+    expect(answer.model.sources).toEqual([]);
+    const sent = JSON.stringify(model.doGenerateCalls);
+    for (const text of [...JIRA_ONLY, ...WIKI_ONLY]) expect(sent, text).not.toContain(text);
+    expect(sent).toContain('этой модели не открыты');
+  });
+
+  it('открытый источник доходит до модели и назван в подписи', async () => {
+    const game = withJira();
+    (game.config.navigator.models['claude'] as { sources: string[] }).sources = ['jira'];
+    const model = new MockLanguageModelV4({ doGenerate: [call('sources', {}), say('PAY-14 стоит 12 дней.')] });
+    const answer = await ask(game, DAY, resolveModel(game.config, 'claude'), model, 'Что стоит?');
+    expect(answer.model.sources).toEqual(['jira']);
+    expect(JSON.stringify(model.doGenerateCalls[1]?.prompt)).toContain('PAY-14');
+  });
+});
+
 describe('вопрос штурману', () => {
   it('модель берёт данные инструментом и отвечает; видно, что она вызывала', async () => {
     const model = new MockLanguageModelV4({ doGenerate: [call('sheet', { id: 'mark' }), call('signals', {}, 2), say('Марк перегружен: 94% с его слов, 6 дней назад.')] });
@@ -184,14 +243,14 @@ describe('вопрос штурману', () => {
 
     expect(answer.text).toBe('Марк перегружен: 94% с его слов, 6 дней назад.');
     expect(answer.tools).toEqual(['sheet(mark)', 'signals']);
-    expect(answer.model).toEqual({ name: 'claude', provider: 'anthropic', model: 'claude-sonnet-5-5', layers: ['team', 'pair', 'me'] });
+    expect(answer.model).toEqual({ name: 'claude', provider: 'anthropic', model: 'claude-sonnet-5-5', layers: ['team', 'pair', 'me'], sources: [] });
     expect(answer.tokens).toEqual({ input: 30, output: 15 });
 
     // Модель получила правила, вопрос и набор инструментов только для чтения.
     const first = JSON.stringify(model.doGenerateCalls[0]);
     expect(first).toContain('Ты — штурман');
     expect(first).toContain('Как Марк?');
-    expect((model.doGenerateCalls[0]?.tools ?? []).map((t) => t.name).sort()).toEqual(['agents', 'map', 'roster', 'sheet', 'signals', 'skills', 'tasks', 'turns']);
+    expect((model.doGenerateCalls[0]?.tools ?? []).map((t) => t.name).sort()).toEqual(['agents', 'map', 'roster', 'sheet', 'signals', 'skills', 'sources', 'tasks', 'turns']);
     // Вторым шагом ей вернулся лист Марка со всеми слоями.
     const second = JSON.stringify(model.doGenerateCalls[1]?.prompt);
     expect(second).toContain('Тяну, но без запаса');

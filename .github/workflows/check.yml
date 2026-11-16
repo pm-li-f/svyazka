@@ -47,6 +47,13 @@ jobs:
           node bin/sv.mjs keys --dir examples/demo --no-color
           if node bin/sv.mjs ask "Что горит?" --dir examples/demo --today 2026-11-13 > ask.txt 2>&1; then echo "ask без ключа должен завершиться ошибкой"; exit 1; fi
           grep -q "Нет ключа ANTHROPIC_API_KEY" ask.txt
+          # Источники: без настройки и без входа команды объясняют, чего не хватает, и в сеть не ходят.
+          node bin/sv.mjs sources --dir examples/jira-pomnit-vse --today 2026-11-14 --no-color
+          node bin/sv.mjs signals --dir examples/jira-pomnit-vse --today 2026-11-14 --no-color | grep -q "jira-stall"
+          if node bin/sv.mjs sync --dir "$RUNNER_TEMP/game" > sync.txt 2>&1; then echo "sync без настройки должен завершиться ошибкой"; exit 1; fi
+          grep -q "Источники не настроены" sync.txt
+          if node bin/sv.mjs sources check --dir examples/jira-pomnit-vse --no-color > check.txt 2>&1; then echo "проверка входа без логина должна завершиться ошибкой"; exit 1; fi
+          grep -q "JIRA_USER" check.txt
           node bin/sv.mjs turn end --dir "$RUNNER_TEMP/game"
           git -C "$RUNNER_TEMP/game" log --format=%s
       - name: web

@@ -1,8 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { GameLoadError, Layer, loadGame } from '@svyazka/core';
+import { GameLoadError, Layer, loadGame, type SourceName } from '@svyazka/core';
 import { sheetView, TurnError } from '@svyazka/engine';
 import { type Keys, NavigatorError, type OpenModel, readKeys, runAsk, runPrep } from '@svyazka/navigator';
 import * as ops from '@svyazka/ops';
+import { type ConnectOptions, type Creds, readCreds, runSync, SourceError } from '@svyazka/sources';
 import { buildState } from './state.js';
 
 export interface ApiOptions {
@@ -11,6 +12,8 @@ export interface ApiOptions {
   today: () => string;
   /** Подмена модели и ключей штурмана для тестов. */
   navigator?: { open?: OpenModel; keys?: () => Keys };
+  /** Подмена входа в источники и сети для тестов. */
+  sources?: { creds?: () => Record<SourceName, Creds>; fetch?: ConnectOptions['fetch'] };
 }
 
 /** Ошибка запроса с текстом для человека. */
@@ -61,8 +64,9 @@ function guard(req: IncomingMessage, port: number): string | null {
 }
 
 /** Возвращает обработчик: true — запрос был к API и обработан, false — не к API. */
-export function createApi({ dir, port, today, navigator }: ApiOptions) {
+export function createApi({ dir, port, today, navigator, sources }: ApiOptions) {
   const keys = () => (navigator?.keys ?? readKeys)();
+  const creds = () => (sources?.creds ?? readCreds)();
   const nav = (model: unknown) => ({ dir, today: today(), modelName: str(model), keys: keys(), ...(navigator?.open ? { open: navigator.open } : {}) });
 
   return async function api(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -80,7 +84,7 @@ export function createApi({ dir, port, today, navigator }: ApiOptions) {
     try {
       let m: RegExpExecArray | null;
       if (route === 'GET /api/state') {
-        send(res, 200, buildState(dir, now, keys()));
+        send(res, 200, buildState(dir, now, keys(), creds()));
       } else if (req.method === 'GET' && (m = /^\/api\/sheet\/([a-z0-9-]+)$/.exec(url.pathname))) {
         const layer = Layer.safeParse(url.searchParams.get('layer') ?? 'me');
         if (!layer.success) throw new BadRequest('layer: team, pair или me.');
@@ -117,6 +121,10 @@ export function createApi({ dir, port, today, navigator }: ApiOptions) {
         const id = str(body['id']);
         if (!id) throw new BadRequest('Не указано, к встрече с кем готовиться.');
         send(res, 200, await runPrep(id, nav(body['model'])));
+      } else if (route === 'POST /api/sources/sync') {
+        const only = (await readJson(req))['only'];
+        if (only !== undefined && only !== 'jira' && only !== 'confluence') throw new BadRequest('only: jira или confluence.');
+        send(res, 200, await runSync({ dir, today: now, creds: creds(), ...(only ? { only: [only] } : {}), ...(sources?.fetch ? { fetch: sources.fetch } : {}) }));
       } else if (route === 'POST /api/decide') {
         const body = await readJson(req);
         ops.decide(dir, now, str(body['text']) ?? '');
@@ -125,7 +133,7 @@ export function createApi({ dir, port, today, navigator }: ApiOptions) {
         send(res, 404, { error: 'Нет такого адреса.' });
       }
     } catch (e) {
-      if (e instanceof BadRequest || e instanceof TurnError || e instanceof GameLoadError || e instanceof NavigatorError) {
+      if (e instanceof BadRequest || e instanceof TurnError || e instanceof GameLoadError || e instanceof NavigatorError || e instanceof SourceError) {
         send(res, 400, { error: e.message });
       } else if (e instanceof Error && /не найден/.test(e.message)) {
         send(res, 404, { error: e.message });

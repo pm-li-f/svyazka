@@ -1,4 +1,5 @@
-import { loadGame, type GameMap, type Layer, type Turn } from '@svyazka/core';
+import { loadGame, type GameMap, type Layer, type SourceName, type Turn } from '@svyazka/core';
+import { type Creds, hasCreds, readCreds } from '@svyazka/sources';
 import { type Keys, listModels, readKeys } from '@svyazka/navigator';
 import {
   attentionSplit,
@@ -10,6 +11,7 @@ import {
   roster,
   signals,
   skillMatrix,
+  sourcesView,
   strategy,
   type AttentionSplit,
   type Facts,
@@ -18,6 +20,7 @@ import {
   type RosterRow,
   type Signal,
   type SkillMatrix,
+  type SourcesView,
   type Strategy,
 } from '@svyazka/engine';
 
@@ -46,10 +49,12 @@ export interface StateView {
   /** Снимок для игрового слоя: по двум таким снимкам страница находит события для заставок и эффектов. */
   facts: Facts;
   /** Модели штурмана. `ready` — ключ найден; сам ключ на страницу не уходит. */
-  navigator: { default: string; models: { name: string; provider: string; model: string; layers: Layer[]; keyVar: string; ready: boolean }[] };
+  navigator: { default: string; models: { name: string; provider: string; model: string; layers: Layer[]; sources: SourceName[]; keyVar: string; ready: boolean }[] };
+  /** Jira и Confluence по последнему снимку. `creds` — найден ли вход; сам логин и пароль на страницу не уходят. */
+  sources: SourcesView & { creds: Record<SourceName, boolean> };
 }
 
-export function buildState(dir: string, today: string, keys: Keys = readKeys()): StateView {
+export function buildState(dir: string, today: string, keys: Keys = readKeys(), creds: Record<SourceName, Creds> = readCreds()): StateView {
   const game = loadGame(dir);
   const rows = roster(game, today);
   const terrain = mapView(game, today);
@@ -87,9 +92,11 @@ export function buildState(dir: string, today: string, keys: Keys = readKeys()):
         provider: m.provider,
         model: m.model,
         layers: m.layers,
+        sources: m.sources,
         keyVar: m.keyVar,
         ready: keys[m.keyVar] !== undefined,
       })),
     },
+    sources: { ...sourcesView(game, today), creds: { jira: hasCreds(creds.jira), confluence: hasCreds(creds.confluence) } },
   };
 }

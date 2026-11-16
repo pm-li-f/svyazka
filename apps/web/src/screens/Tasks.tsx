@@ -1,4 +1,5 @@
 import type { StateView } from '../api';
+import { JiraPanels } from '../Sources';
 import { Cmd, Panel, STATUS, TERRAIN } from '../ui';
 
 const CRAFT = { 1: 'учится', 2: 'сам', 3: 'учит' } as const;
@@ -118,6 +119,8 @@ export function Tasks({ state }: { state: StateView }) {
           </div>
         </Panel>
       </div>
+
+      <JiraPanels state={state} />
 
       <div className="split">
         <Panel

@@ -1,5 +1,6 @@
 import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from 'react';
 import { api, type StateView } from '../api';
+import { ArtifactsPanel } from '../Sources';
 import { CYCLE, Panel, type Run, Scroll, STATUS } from '../ui';
 import { type Anchor, dayOf, labelsFor, MAP_MIN_WIDTH, type Placed, pointText, SQUAD_LABEL, taskHead as head } from './mapLayout';
 
@@ -329,6 +330,8 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
           </div>
           <RouteWork state={state} run={run} />
         </Panel>
+
+        <ArtifactsPanel state={state} />
       </div>
     </div>
   );

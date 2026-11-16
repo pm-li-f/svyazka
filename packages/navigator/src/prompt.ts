@@ -1,9 +1,9 @@
-import type { Game, Layer } from '@svyazka/core';
+import type { Game, Layer, SourceName } from '@svyazka/core';
 
 const LAYER = { team: 'отряд (видит вся команда)', pair: 'пара (человек и руководитель)', me: 'только руководитель' } as const;
 
 /** Правила штурмана. Одни и те же для любой модели. */
-export function instructions(game: Game, today: string, layers: readonly Layer[]): string {
+export function instructions(game: Game, today: string, layers: readonly Layer[], sources: readonly SourceName[] = []): string {
   const lead = game.people.find((p) => p.is_lead);
   const closed = (['team', 'pair', 'me'] as const).filter((l) => !layers.includes(l));
   return [
@@ -36,6 +36,9 @@ export function instructions(game: Game, today: string, layers: readonly Layer[]
     closed.length === 0
       ? 'Тебе доступны все слои данных.'
       : `Тебе закрыты слои: ${closed.map((l) => LAYER[l]).join('; ')}. Данных из них ты не увидишь. Если для ответа они нужны, скажи об этом, а не гадай.`,
+    sources.length === 0
+      ? 'Данные Jira и Confluence тебе не открыты: о задачах в трекере и о страницах ты ничего не знаешь.'
+      : `Тебе открыт снимок источников: ${sources.join(', ')}. Это данные на дату снимка, а не на сейчас. Число задач у человека — число из трекера, а не оценка.`,
   ].join('\n');
 }
 

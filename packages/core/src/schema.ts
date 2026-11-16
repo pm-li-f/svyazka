@@ -24,6 +24,17 @@ export const CraftLevel = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 /** Оценка «мышление и люди»: 1–5, видна только паре. */
 export const Score = z.number().int().min(1).max(5);
 
+// ---------------------------------------------------------------- ссылки на источники
+
+/** Ключ задачи Jira: PAY-12. */
+export const JiraKey = z.string().regex(/^[A-Z][A-Z0-9_]*-\d+$/, 'ключ задачи Jira вида PAY-12');
+
+/**
+ * Ссылка перехода на Jira: ключ эпика или задачи, несколько ключей или свой запрос JQL.
+ * В игре живут только крупные переходы; тикеты остаются в Jira, игра на них ссылается.
+ */
+export const JiraLink = z.union([JiraKey, z.array(JiraKey).min(1), z.strictObject({ jql: z.string().min(1) })]);
+
 // ---------------------------------------------------------------- team/
 
 export const Person = z.strictObject({
@@ -38,6 +49,8 @@ export const Person = z.strictObject({
   belbin: z.string().optional(),
   belbin_shadow: z.string().optional(),
   owns: z.array(z.string()).default([]),
+  /** Логин человека в Jira: по нему исполнитель задачи узнаётся как участник отряда. */
+  jira: z.string().min(1).optional(),
   craft: z
     .record(z.string(), z.strictObject({ level: CraftLevel, agreed: DateStr }))
     .default({}),
@@ -49,6 +62,8 @@ export const Agent = z.strictObject({
   purpose: z.string().min(1),
   /** За агента всегда отвечает человек. */
   accountable: Id,
+  /** Логин агента в Jira, если у него есть своя учётная запись. */
+  jira: z.string().min(1).optional(),
   /** Слово агентам: их отчёты. */
   reports: z.array(z.strictObject({ at: DateStr, text: z.string().min(1) })).default([]),
 });
@@ -75,6 +90,8 @@ export const Task = z.strictObject({
   camp: Id.optional(),
   since: DateStr.optional(),
   note: z.string().optional(),
+  /** Где этот переход живёт в Jira. */
+  jira: JiraLink.optional(),
   raci: Raci,
   /** Разведки: для переходов типа «туман». Это и есть журнал гипотез. */
   probes: z
@@ -106,6 +123,86 @@ export const GameMap = z.strictObject({
     .min(1),
   /** План состава: сколько людей должно быть в отряде и к какой дате. */
   headcount: z.strictObject({ target: z.number().int().min(1), by: DateStr }).optional(),
+});
+
+/**
+ * Артефакт, источник которого снаружи: устав, цели на квартал, роадмап, постмортемы.
+ * Игра его не ведёт, а следит за давностью: у ссылки тоже есть срок годности.
+ */
+export const Artifact = z.strictObject({
+  id: Id,
+  title: z.string().min(1),
+  /** Страница Confluence: её номер или ссылка на неё. */
+  confluence: z.union([z.string().min(1), z.number().int().positive().transform(String)]),
+  /** Срок годности в днях. Без него — общий из config.yaml. */
+  ttl_days: z.number().int().min(1).optional(),
+  note: z.string().optional(),
+});
+
+export const Artifacts = z.strictObject({ artifacts: z.array(Artifact).default([]) });
+
+// ---------------------------------------------------------------- team/sources/ — снимки источников
+
+/** Задача Jira в снимке. Только то, что нужно для сигналов. */
+export const JiraIssue = z.strictObject({
+  key: JiraKey,
+  summary: z.string(),
+  type: z.string(),
+  status: z.string(),
+  /** Категория статуса в Jira: new — к выполнению, indeterminate — в работе, done — готово. */
+  category: z.enum(['new', 'indeterminate', 'done']),
+  /** Логин исполнителя в Jira. */
+  assignee: z.string().nullable(),
+  updated: DateStr,
+  due: DateStr.nullable().default(null),
+  /** Незакрытые задачи, которых эта ждёт. */
+  blocked_by: z.array(JiraKey).default([]),
+});
+
+/** Снимок Jira. Его пишет `sv sync`; движок в сеть не ходит и считает только по снимку. */
+export const JiraSnapshot = z.strictObject({
+  at: DateStr,
+  server: z.string().optional(),
+  /** Ключ — id перехода. */
+  tasks: z
+    .record(
+      Id,
+      z.strictObject({
+        query: z.string(),
+        /** Сколько задач нашёл запрос. Больше, чем в списке, — список обрезан. */
+        total: z.number().int().min(0),
+        issues: z.array(JiraIssue).default([]),
+        error: z.string().optional(),
+      }),
+    )
+    .default({}),
+  /** Незакрытые задачи человека во всей Jira. Ключ — id человека в игре. */
+  people: z
+    .record(Id, z.strictObject({ in_progress: z.number().int().min(0), open: z.number().int().min(0) }))
+    .default({}),
+});
+
+/** Снимок Confluence: когда и кем менялась каждая страница-артефакт. */
+export const ConfluenceSnapshot = z.strictObject({
+  at: DateStr,
+  /** Ключ — id артефакта. */
+  pages: z
+    .record(
+      Id,
+      z.union([
+        z.strictObject({
+          page: z.string(),
+          title: z.string(),
+          space: z.string().nullable(),
+          updated: DateStr,
+          by: z.string().nullable(),
+          version: z.number().int().min(1),
+          url: z.string(),
+        }),
+        z.strictObject({ error: z.string() }),
+      ]),
+    )
+    .default({}),
 });
 
 // ---------------------------------------------------------------- pair/
@@ -199,6 +296,9 @@ export const Turn = z.strictObject({
 
 export const Layer = z.enum(['team', 'pair', 'me']);
 
+/** Внешний источник данных. */
+export const SourceName = z.enum(['jira', 'confluence']);
+
 const Provider = z.enum(['anthropic', 'moonshotai', 'alibaba']);
 
 /** Модель штурмана: у какого поставщика, какая и какие слои ей можно отправлять. */
@@ -207,6 +307,8 @@ export const NavigatorModel = z.strictObject({
   model: z.string().min(1),
   /** Слои, которые можно отправлять этой модели. Остального она не увидит. */
   layers: z.array(Layer),
+  /** Данные каких источников можно отправлять этой модели. С начала — никаких. */
+  sources: z.array(SourceName).default([]),
   /** Другой адрес API: например, китайская площадка Moonshot. */
   base_url: z.url().optional(),
 });
@@ -225,12 +327,47 @@ export const Navigator = z.union([
     .strictObject({ provider: Provider, model: z.string().min(1), cloud_layers: z.array(Layer) })
     .transform((old) => ({
       default: PROVIDER_ALIAS[old.provider] as string,
-      models: { [PROVIDER_ALIAS[old.provider]]: { provider: old.provider, model: old.model, layers: old.cloud_layers } } as Record<
+      models: { [PROVIDER_ALIAS[old.provider]]: { provider: old.provider, model: old.model, layers: old.cloud_layers, sources: [] } } as Record<
         string,
         z.infer<typeof NavigatorModel>
       >,
     })),
 ]);
+
+/** Адрес сервера без логина и пароля: их место — файл ключей. */
+const ServerUrl = z
+  .url()
+  .refine((u) => /^https?:\/\//i.test(u), 'адрес начинается с https:// или http://')
+  .refine((u) => !/^https?:\/\/[^/]*@/i.test(u), 'логин и пароль в адрес не пишем: их место — файл ключей');
+
+/** Внешние источники. Адреса и пороги — здесь; логин и пароль — только в файле ключей. */
+export const Sources = z.strictObject({
+  jira: z
+    .strictObject({
+      url: ServerUrl,
+      /** Как входить: auto — токен, если он есть, иначе логин и пароль, а если сервер их в API не принимает — сессия. */
+      auth: z.enum(['auto', 'basic', 'session', 'token']).default('auto'),
+      /** Задача в работе не двигалась столько дней — застой. */
+      stale_days: z.number().int().min(1).default(7),
+      /** Больше стольких задач в работе у одного человека — сигнал. */
+      wip_max: z.number().int().min(1).default(3),
+      /** Как в вашей Jira называется тип связи «блокирует». */
+      blocks_link: z.string().min(1).default('Blocks'),
+      /** Сколько задач на один переход читать самое большее. */
+      max_issues: z.number().int().min(1).max(1000).default(300),
+    })
+    .optional(),
+  confluence: z
+    .strictObject({
+      url: ServerUrl,
+      auth: z.enum(['auto', 'basic', 'token']).default('auto'),
+      /** Срок годности страницы-артефакта, если у неё нет своего. */
+      ttl_days: z.number().int().min(1).default(30),
+    })
+    .optional(),
+  /** Снимок старше стольких дней считается устаревшим. */
+  fresh_days: z.number().int().min(1).default(2),
+});
 
 export const Config = z.strictObject({
   /** Срок годности контекста о человеке, в днях. */
@@ -268,6 +405,7 @@ export const Config = z.strictObject({
   /** Названия для людей: id навыка или качества → подпись по-русски. Без подписи показывается id. */
   labels: z.record(z.string(), z.string()).default({}),
   navigator: Navigator,
+  sources: Sources.prefault({}),
 });
 
 // ---------------------------------------------------------------- всё вместе
@@ -283,6 +421,13 @@ export type Turn = z.infer<typeof Turn>;
 export type Config = z.infer<typeof Config>;
 export type NavigatorModel = z.infer<typeof NavigatorModel>;
 export type Layer = z.infer<typeof Layer>;
+export type SourceName = z.infer<typeof SourceName>;
+export type JiraLink = z.infer<typeof JiraLink>;
+export type Artifact = z.infer<typeof Artifact>;
+export type JiraIssue = z.infer<typeof JiraIssue>;
+export type JiraSnapshot = z.infer<typeof JiraSnapshot>;
+export type ConfluenceSnapshot = z.infer<typeof ConfluenceSnapshot>;
+export type Sources = z.infer<typeof Sources>;
 
 export interface Game {
   config: Config;
@@ -295,4 +440,8 @@ export interface Game {
   journals: Record<string, Journal>;
   privates: Record<string, Private>;
   turns: Turn[];
+  /** Артефакты, источник которых снаружи. */
+  artifacts: Artifact[];
+  /** Снимки источников: что `sv sync` прочитал в последний раз. */
+  sources: { jira?: JiraSnapshot; confluence?: ConfluenceSnapshot };
 }

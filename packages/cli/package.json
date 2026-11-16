@@ -8,6 +8,7 @@
   "dependencies": {
     "@svyazka/core": "*",
     "@svyazka/engine": "*",
-    "@svyazka/navigator": "*"
+    "@svyazka/navigator": "*",
+    "@svyazka/sources": "*"
   }
 }

@@ -6,7 +6,7 @@ import { mapView } from '@svyazka/engine';
 import { type Anchor, type Box, labelsFor, pointBox, pointText, SQUAD_LABEL, taskBox, taskHead } from '../src/screens/mapLayout';
 
 const examples = resolve(dirname(fileURLToPath(import.meta.url)), '../../../examples');
-const NAMES = ['demo', 'kak-po-maslu', 'this-is-fine', 'ezhik-v-tumane', 'agenty-razberutsya', 'svezhaya-krov'];
+const NAMES = ['demo', 'kak-po-maslu', 'this-is-fine', 'ezhik-v-tumane', 'agenty-razberutsya', 'svezhaya-krov', 'jira-pomnit-vse'];
 
 function boxOf(x: number, y: number, size: { width: number; height: number }, anchor: Anchor): Box {
   const gap = anchor === 'center' ? 0 : 1.3;

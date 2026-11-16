@@ -702,3 +702,10 @@ textarea { width: 100%; resize: vertical; font-family: var(--sans); font-size: 1
 .previews { display: flex; flex-wrap: wrap; gap: 10px; }
 .btn.preview { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; height: auto; min-height: 32px; padding: 8px 12px; text-align: left; }
 .btn.preview .muted { font-size: 11px; }
+
+/* источники: Jira и Confluence */
+.sync { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.meter { display: inline-block; width: 64px; height: 6px; vertical-align: middle; background: var(--line); }
+.meter i { display: block; height: 100%; background: var(--green); }
+.lint:empty { display: none; }
+.panel-foot > .hint { margin-top: 8px; }
