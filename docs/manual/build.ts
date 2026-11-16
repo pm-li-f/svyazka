@@ -232,7 +232,11 @@ async function captureScreens(page: Page): Promise<Record<string, ScreenShots>> 
       for (const name of ['снят сигнал', 'назначен дублёр', 'шаг квеста']) await page.click(`${block('settings-effects')} button:has-text("${name}")`);
       await page.locator(`${block('effects')} .toast`).nth(2).waitFor();
       await page.waitForTimeout(1100);
+      // Отметки лежат поверх экрана: на время снимка подкладываем фон, чтобы между ними не просвечивал текст под ними.
+      const backdrop = (on: boolean) => page.locator(block('effects')).evaluate((el, show) => ((el as HTMLElement).style.cssText = show ? 'background:#15181b;padding:10px;box-sizing:content-box' : ''), on);
+      await backdrop(true);
       entry.effects = await shoot(page, block('effects'), 'effects');
+      await backdrop(false);
       await page.click(`${block('settings')} button:has-text("сдержанные")`);
       await page.locator(`${block('effects')} .toast`).first().waitFor({ state: 'detached', timeout: 10_000 });
     }
