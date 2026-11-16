@@ -6,8 +6,8 @@ import { createServer as createVite } from 'vite';
 import { type ApiOptions, createApi } from './api.js';
 
 /** Поднимает локальный сервер «Связки»: API, страницу и поток событий об изменениях в папке игры. */
-export async function startServer({ dir, port, today, navigator }: ApiOptions): Promise<Server> {
-  const api = createApi({ dir, port, today, ...(navigator ? { navigator } : {}) });
+export async function startServer({ dir, port, today, navigator, sources }: ApiOptions): Promise<Server> {
+  const api = createApi({ dir, port, today, ...(navigator ? { navigator } : {}), ...(sources ? { sources } : {}) });
 
   // Страница узнаёт об изменениях в папке игры и перечитывает состояние:
   // правки из терминала и из Obsidian видны сразу.

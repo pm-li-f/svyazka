@@ -125,3 +125,12 @@ figcaption { font-size: 8.4pt; color: var(--muted); margin-top: 1.4mm; }
 .maps figure { margin-bottom: 2mm; }
 .maps h4 { margin-bottom: 1mm; }
 .maps p { font-size: 9pt; color: var(--soft); }
+
+/* заставки и эффекты */
+.frames h4 .when { font-weight: 400; color: var(--muted); font-size: 8.4pt; margin-left: 1.5mm; }
+.frames img { image-rendering: pixelated; }
+.side-by-side { display: grid; grid-template-columns: auto 1fr; column-gap: 9mm; align-items: start; }
+.side-by-side figure { background: var(--dark); padding: 3mm; border-radius: 1.2mm; }
+
+/* блок с пометкой, на каком он экране */
+.block header .where { margin-left: auto; font-size: 8.4pt; color: var(--muted); }

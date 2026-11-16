@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { BLOCK_IDS, SCREENS } from '../../../docs/manual/screens';
+import { BLOCK_IDS, SCREENS, SOURCE_BLOCKS, SPLASHES } from '../../../docs/manual/screens';
 import { STORY } from '../../../docs/manual/story';
 
 const src = resolve(dirname(fileURLToPath(import.meta.url)), '../src');
@@ -27,8 +27,13 @@ describe.skipIf(!process.env['SVYAZKA_MANUAL'])('руководство игро
     expect([...new Set(STORY.flatMap((s) => s.shots))].filter((id) => !exists(id))).toEqual([]);
   });
 
+  it('кнопки заставок и блоки источников, на которые опирается руководство, есть в интерфейсе', () => {
+    expect(SPLASHES.map((s) => s.button).filter((b) => !code.includes(`['${b}', `))).toEqual([]);
+    for (const b of SOURCE_BLOCKS) for (const text of [b.what, b.source, b.why]) expect(text.trim().length, b.id).toBeGreaterThan(15);
+  });
+
   it('у каждого экрана есть блоки и действия, у каждого блока — все три описания', () => {
-    expect(SCREENS.map((s) => s.id)).toEqual(['people', 'map', 'tasks', 'sheet', 'turn']);
+    expect(SCREENS.map((s) => s.id)).toEqual(['people', 'map', 'tasks', 'sheet', 'turn', 'settings']);
     for (const screen of SCREENS) {
       expect(screen.blocks.length, screen.id).toBeGreaterThan(0);
       expect(screen.actions.length, screen.id).toBeGreaterThan(0);

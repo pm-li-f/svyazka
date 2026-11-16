@@ -17,7 +17,7 @@ import { chromium, type Browser, type Page } from 'playwright-core';
 import { loadGame } from '@svyazka/core';
 import { roster, signals } from '@svyazka/engine';
 import { startServer } from '../../apps/web/server/start.js';
-import { GAME_STATE, SCREENS, type Screen } from './screens.js';
+import { type Block, GAME_STATE, SCREENS, SOURCE_BLOCKS, SPLASHES, type Screen } from './screens.js';
 import { expectText, type Facts, STORY, STORY_DATE, STORY_DAY } from './story.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +26,9 @@ const out = join(here, 'out');
 const img = join(out, 'img');
 const WIDTH = 1360;
 const MAP_DATE = '2026-11-13';
+/** Пример с Jira и Confluence собран под эту дату: его снимки сняты «сегодня». */
+const SOURCES_EXAMPLE = 'jira-pomnit-vse';
+const SOURCES_DATE = '2026-11-14';
 
 const block = (id: string) => `[data-block="${id}"]`;
 const inline = (text: string) => marked.parseInline(text) as string;
@@ -88,6 +91,8 @@ async function serve(dir: string, port: number, today: string): Promise<string> 
       dir,
       port,
       today: () => today,
+      // Настоящий файл ключей при сборке не читается: вход в источники — заглушка, в сеть сборщик не ходит.
+      sources: { creds: () => ({ jira: { user: 'reader', password: 'stand-in' }, confluence: { user: 'reader', password: 'stand-in' } }) },
       navigator: {
         keys: () => ({ ANTHROPIC_API_KEY: { value: 'stand-in', source: 'file' } }),
         open: () =>
@@ -173,6 +178,10 @@ interface ScreenShots {
   overview: Shot;
   blocks: Record<string, Shot>;
   extra?: Shot;
+  /** Кадры заставок и снимок эффектов — у экрана настроек. */
+  frames?: Shot[];
+  onScreen?: Shot;
+  effects?: Shot;
 }
 
 async function captureScreens(page: Page): Promise<Record<string, ScreenShots>> {
@@ -207,7 +216,37 @@ async function captureScreens(page: Page): Promise<Record<string, ScreenShots>> 
       await page.waitForTimeout(300);
       entry.extra = await shoot(page, '.screen', 'sheet-as-team');
     }
+    if (screen.id === 'settings') {
+      // Каждая заставка показывается своей кнопкой; кадр снимается ближе к концу, когда сцена сложилась.
+      entry.frames = [];
+      for (const [i, s] of SPLASHES.entries()) {
+        await page.click(`${block('settings-splashes')} button:has-text("${s.button}")`);
+        await page.locator(block('splash')).waitFor();
+        await page.waitForTimeout(s.at);
+        entry.frames.push(await shoot(page, `${block('splash')} canvas`, `splash-${i + 1}`));
+        if (i === SPLASHES.length - 1) entry.onScreen = await shoot(page, block('splash'), 'splash-on-screen');
+        await page.locator(block('splash')).waitFor({ state: 'detached', timeout: 12_000 });
+      }
+      // Эффекты: «полные» с искрами; снимаем, когда искры уже разлетелись.
+      await page.click(`${block('settings')} button:has-text("полные")`);
+      for (const name of ['снят сигнал', 'назначен дублёр', 'шаг квеста']) await page.click(`${block('settings-effects')} button:has-text("${name}")`);
+      await page.locator(`${block('effects')} .toast`).nth(2).waitFor();
+      await page.waitForTimeout(1100);
+      entry.effects = await shoot(page, block('effects'), 'effects');
+      await page.click(`${block('settings')} button:has-text("сдержанные")`);
+      await page.locator(`${block('effects')} .toast`).first().waitFor({ state: 'detached', timeout: 10_000 });
+    }
     shots[screen.id] = entry;
+  }
+  return shots;
+}
+
+/** Блоки, которые появляются с Jira и Confluence: снимаются на своём примере, каждый на своём экране. */
+async function captureSources(page: Page): Promise<Record<string, Shot>> {
+  const shots: Record<string, Shot> = {};
+  for (const b of SOURCE_BLOCKS) {
+    await go(page, b.route, block(b.id));
+    shots[b.id] = await shoot(page, block(b.shot ?? b.id), `sources-${b.id}`);
   }
   return shots;
 }
@@ -250,13 +289,11 @@ function figure(shot: Shot, { scale = MM, maxWidth = 273, maxHeight = 150, capti
   return `<figure class="${cls}"><img src="img/${shot.file}" style="width:${(shot.width * mm).toFixed(1)}mm" alt="${caption ? esc(caption) : ''}">${caption ? `<figcaption>${inline(caption)}</figcaption>` : ''}</figure>`;
 }
 
-function screenHtml(screen: Screen, shots: ScreenShots, chapter: number, n: number): string {
-  const blocks = screen.blocks
-    .map((b, i) => {
-      const shot = shots.blocks[b.id] as Shot;
-      const wide = shot.width > 640;
-      return `<article class="block ${wide ? 'wide' : ''}">
-  <header><span class="n">${i + 1}</span><h4>${esc(b.title)}</h4></header>
+/** Карточка блока: снимок и три ответа — что показывает, откуда данные, зачем. */
+function card(n: number, b: Block, shot: Shot, where = ''): string {
+  const wide = shot.width > 640;
+  return `<article class="block ${wide ? 'wide' : ''}">
+  <header><span class="n">${n}</span><h4>${esc(b.title)}</h4>${where ? `<span class="where">${esc(where)}</span>` : ''}</header>
   ${wide ? figure(shot, { maxHeight: 112 }) : figure(shot, { maxWidth: 104, maxHeight: 104 })}
   <dl>
     <dt>Что показывает</dt><dd>${inline(b.what)}</dd>
@@ -264,8 +301,31 @@ function screenHtml(screen: Screen, shots: ScreenShots, chapter: number, n: numb
     <dt>Зачем</dt><dd>${inline(b.why)}</dd>
   </dl>
 </article>`;
-    })
-    .join('\n');
+}
+
+const sourcesHtml = (shots: Record<string, Shot>) =>
+  `<div class="blocks">${SOURCE_BLOCKS.map((b, i) => card(i + 1, b, shots[b.id] as Shot, `экран «${b.screen}»`)).join('\n')}</div>`;
+
+/** Пять заставок кадрами, вид заставки на экране и эффекты. */
+function gameLayerHtml(shots: ScreenShots): string {
+  if (!shots.frames || !shots.onScreen || !shots.effects) return '';
+  const frames = SPLASHES.map(
+    (s, i) => `<div>${figure(shots.frames?.[i] as Shot, { maxWidth: 87 })}<h4>${esc(s.title)} <span class="when">${esc(s.when)}</span></h4><p>${inline(s.text)}</p></div>`,
+  ).join('');
+  return `<div class="keep"><h3>Пять заставок</h3>
+<p>Кадр каждый раз собирается заново: хребет повторяет рельеф твоей карты, погода и время суток настоящие, в связке столько фигур, сколько людей в отряде, агенты идут рядом. Чем чаще событие, тем короче заставка.</p>
+<div class="maps frames">${frames}<div>${figure(shots.onScreen, { maxWidth: 87, cls: 'screen' })}<h4>Так это выглядит на экране</h4><p>Заставка ложится поверх игры. Под кадром — что случилось и с чем именно. Любая клавиша или щелчок пропускает.</p></div></div></div>
+<div class="keep"><h3>Эффекты</h3>
+<div class="side-by-side">${figure(shots.effects, { maxWidth: 80 })}<div>
+<p>Эффект — короткая отметка в правом верхнем углу. Она появляется, когда что-то действительно закрылось:</p>
+<ul><li>снят сигнал;</li><li>у навыка, который держал один человек, появился дублёр;</li><li>линтер RACI стал зелёным;</li><li>сделан шаг личного квеста;</li><li>человек обновил свой лист.</li></ul>
+<p>Отметка сама уходит через несколько секунд. «Полные» эффекты — с искрами, как на снимке; «сдержанные» — одной строкой без движения.</p>
+<p>Событие считается по разнице двух состояний игры, а не по нажатию кнопки. Поэтому правка файла в Obsidian даёт тот же эффект, что и кнопка на странице, а при открытии страницы ничего не показывается.</p>
+</div></div></div>`;
+}
+
+function screenHtml(screen: Screen, shots: ScreenShots, chapter: number, n: number): string {
+  const blocks = screen.blocks.map((b, i) => card(i + 1, b, shots.blocks[b.id] as Shot)).join('\n');
   const actions = screen.actions.map((a) => `<tr><td>${inline(a.act)}</td><td class="cost">${inline(a.cost)}</td><td>${inline(a.effect)}</td></tr>`).join('\n');
   const notes =
     screen.id === 'people'
@@ -286,6 +346,7 @@ ${figure(shots.overview, { caption: `Экран «${screen.title}» целико
 <h3>Блоки</h3>
 <div class="blocks">${blocks}</div>
 ${extra}
+${screen.id === 'settings' ? gameLayerHtml(shots) : ''}
 <div class="keep"><h3>Что здесь можно сделать</h3>
 <table class="actions"><thead><tr><th>Действие</th><th>Внимание</th><th>Что меняется</th></tr></thead><tbody>${actions}</tbody></table></div>
 </section>`;
@@ -351,6 +412,12 @@ async function build(): Promise<void> {
     const shots = await captureScreens(screenPage);
     console.log(`экраны: ${Object.keys(shots).length}, блоков: ${Object.values(shots).reduce((n, s) => n + Object.keys(s.blocks).length, 0)}`);
 
+    const sourcesDir = copyOf(SOURCES_EXAMPLE);
+    const sourcesPage = await open(browser, await serve(sourcesDir, 4296, SOURCES_DATE));
+    const sourceShots = await captureSources(sourcesPage);
+    await sourcesPage.close();
+    console.log(`источники: блоков ${Object.keys(sourceShots).length}`);
+
     const storyPage = await open(browser, storyBase);
     const steps = await captureStory(storyPage);
     console.log(`пример хода: ${steps.length} шагов`);
@@ -375,12 +442,14 @@ async function build(): Promise<void> {
       story: () => storyHtml(steps),
       maps: () =>
         `<div class="keep"><p>Вот три карты из трёх примеров. Правила одни и те же, данные разные.</p><div class="maps">${maps.map((m, i) => `<div>${figure(mapShots[i] as Shot, { maxWidth: 87 })}<h4>${m.title} · <code>${m.example}</code></h4><p>${m.text}</p></div>`).join('')}</div></div>`,
+      sources: () => sourcesHtml(sourceShots),
       day: () => STORY_DAY,
       date: () => STORY_DATE,
     };
     SCREENS.forEach((s, i) => (parts[`screen:${s.id}`] = (chapter) => screenHtml(s, shots[s.id] as ScreenShots, chapter, i + 1)));
     parts['cli:roster'] = () => `<pre class="cli">${esc(sv(screensDir, STORY_DATE, 'roster'))}</pre>`;
     parts['cli:signals'] = () => `<pre class="cli">${esc(sv(screensDir, STORY_DATE, 'signals'))}</pre>`;
+    parts['cli:signals-jira'] = () => `<pre class="cli small">${esc(sv(sourcesDir, SOURCES_DATE, 'signals'))}</pre>`;
 
     const source = readFileSync(join(here, 'manual.md'), 'utf8').replace(/<!--[\s\S]*?-->/, '');
     const unknown = [...source.matchAll(/\{\{([^}]+)\}\}/g)].map((m) => (m[1] as string).trim()).filter((k) => !(k in parts));

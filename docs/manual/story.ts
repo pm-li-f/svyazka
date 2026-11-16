@@ -112,6 +112,9 @@ export const STORY: Step[] = [
         throw new Error(`После 1on1 сигналов должно стать меньше: было ${f['signalsBefore']}, стало ${f['signalsAfter']}.`);
       }
       await expectText(page, `${block('roster')} tr:has(a[href="#/sheet/timur"])`, '0d');
+      // На карте шторм: эффекты молчат, отметки «сигнал снят» быть не должно. На это опирается текст главы.
+      const toasts = await page.locator(`${block('effects')} .toast`).count();
+      if (toasts !== 0) throw new Error(`В шторм эффектов быть не должно, а на экране их ${toasts}.`);
     },
   },
   {
