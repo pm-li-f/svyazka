@@ -67,6 +67,8 @@ export interface MapTask {
   consulted: string[];
   /** Замечания линтера RACI по этому переходу, короткими фразами. */
   lint: string[];
+  /** Разведки: гипотеза и вывод по ней. null — вывода ещё нет. */
+  probes: { text: string; outcome: string | null }[];
   x: number;
   y: number;
   /** Радиус пятна местности в клетках по вертикали; по горизонтали пятно шире. */
@@ -337,6 +339,7 @@ export function mapView(game: Game, today: string): MapView {
       accountable: task.raci.A === null ? null : name(task.raci.A),
       consulted: task.raci.C.map(name),
       lint,
+      probes: task.probes.map((probe) => ({ text: probe.text, outcome: probe.outcome ?? null })),
       x: spot.x,
       y: spot.y,
       radius: stampRadius(task.terrain, days),

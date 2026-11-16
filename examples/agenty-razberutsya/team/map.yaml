@@ -1,0 +1,10 @@
+vision: Пятеро делают работу двадцати
+cycle: executing
+target: conveyor
+weather: {stage: norming, note: Притираемся к правилам работы с агентами, at: 2026-10-19}
+camps:
+  - {id: base, name: База, phase: done}
+  - {id: pilots, name: Первые агенты в работе, phase: done, note: "Пройден. Главный урок: агент не спрашивает, когда не уверен."}
+  - {id: conveyor, name: Конвейер на агентах, phase: current, note: "Рутину ведут агенты, люди проверяют."}
+  - {id: scale, name: Вдвое больше без найма, phase: planned, note: Упирается в проверку результата.}
+  - {id: summit, name: Пятеро делают работу двадцати, phase: idea}

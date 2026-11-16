@@ -1,0 +1,12 @@
+vision: Вырасти втрое и не развалиться
+cycle: executing
+target: growth
+weather: {stage: forming, note: Трое новых за две недели, at: 2026-11-02}
+camps:
+  - {id: base, name: База, phase: done}
+  - {id: mvp, name: MVP, phase: done}
+  - {id: beta, name: Бета-релиз, phase: done, note: Пройден впятером.}
+  - {id: growth, name: Втрое больше клиентов, phase: current, note: "Идём медленнее: старые учат новых."}
+  - {id: round, name: Раунд инвестиций, phase: planned, note: Нужна вторая связка.}
+  - {id: summit, name: Компания на сорок человек, phase: idea}
+headcount: {target: 12, by: 2027-11-01}

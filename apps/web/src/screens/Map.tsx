@@ -1,7 +1,7 @@
 import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from 'react';
 import { api, type StateView } from '../api';
 import { CYCLE, Panel, type Run, STATUS } from '../ui';
-import { type Anchor, MAP_MIN_WIDTH, type Placed, placeLabels } from './mapLayout';
+import { type Anchor, dayOf, labelsFor, MAP_MIN_WIDTH, type Placed, pointText, SQUAD_LABEL, taskHead as head } from './mapLayout';
 
 type View = StateView['terrain'];
 type MapTask = View['tasks'][number];
@@ -13,7 +13,6 @@ const TERRAINS: { id: Terrain; name: string; kind: string; rule: string }[] = [
   { id: 'fog', name: 'туман', kind: 'запутанный', rule: 'Разведка — наблюдение — решение. Три дешёвых прототипа лучше одного плана.' },
   { id: 'storm', name: 'шторм', kind: 'хаотичный', rule: 'Сначала действуй, потом разбирайся. Командир один.' },
 ];
-const TERRAIN_NAME = Object.fromEntries(TERRAINS.map((t) => [t.id, t.name])) as Record<Terrain, string>;
 const PHASE = { done: 'разбор ✓', current: 'идём', planned: 'маршрут', idea: 'замысел' } as const;
 
 /** Три оттенка на каждый вид клетки: карта не выглядит залитой одним цветом. */
@@ -124,7 +123,6 @@ const at = (view: View, p: Placed): CSSProperties => ({
   transform: SHIFT[p.anchor],
 });
 
-const dayOf = (days: number | null) => (days === null ? null : `день ${Math.max(0, days) + 1}`);
 const ruDate = (iso: string) => iso.split('-').reverse().join('.');
 const people = (names: string[]) => (names.length === 0 ? 'никто' : names.join(', '));
 
@@ -145,17 +143,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
     return () => watch.disconnect();
   }, [view]);
 
-  const head = (t: MapTask) => [TERRAIN_NAME[t.terrain].toUpperCase(), t.status === 'blocked' ? 'СТОИТ' : dayOf(t.days)].filter(Boolean).join(' · ');
-  const pointText = (p: View['route'][number]) => {
-    const camp = strategy.camps.find((c) => c.id === p.id);
-    return p.kind === 'base' ? p.name.toLowerCase() : `${camp?.label ?? ''} · ${p.name}${p.phase === 'done' ? ' ✓' : ''}`;
-  };
-  const labels = placeLabels({
-    view,
-    taskLabels: Object.fromEntries(view.tasks.map((t) => [t.id, { head: head(t), lint: t.lint[0] ?? null }])),
-    pointLabels: Object.fromEntries(view.route.map((p) => [p.id, pointText(p)])),
-    squadLabel: 'отряд здесь',
-  });
+  const labels = labelsFor(view);
 
   const cycleName = CYCLE.find(([id]) => id === state.map.cycle)?.[1] ?? state.map.cycle;
   const weather = state.map.weather.stage;
@@ -182,7 +170,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
               </span>
             ))}
             <span className="map-point squad" style={at(view, labels.squad)}>
-              отряд здесь
+              {SQUAD_LABEL}
             </span>
             {view.tasks.map((t) => (
               <button
@@ -238,6 +226,19 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
                       </span>
                     ))}
                     {t.note && <span className="sans muted">{t.note}</span>}
+                    {t.probes.length > 0 && (
+                      <span className="probes">
+                        <span className="muted">
+                          разведки: {t.probes.length}, с выводом — {t.probes.filter((x) => x.outcome !== null).length}
+                        </span>
+                        {t.probes.map((probe) => (
+                          <span key={probe.text} className="sans">
+                            <span className={probe.outcome === null ? 'muted' : 'soft'}>{probe.text}</span>
+                            {probe.outcome !== null && <span className="blue"> → {probe.outcome}</span>}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </button>
                 ))}
               </section>
@@ -275,7 +276,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
           <div className="pad stack">
             <p className="headcount">
               <b>{strategy.squad.people}</b>
-              {strategy.squad.headcount && (
+              {strategy.squad.headcount && strategy.squad.headcount.need > 0 && (
                 <>
                   <span aria-hidden="true"> → </span>
                   <span className="sr-only"> по плану </span>
@@ -286,6 +287,7 @@ export function MapScreen({ state, run }: { state: StateView; run: Run }) {
             </p>
             <p className="sans muted">
               Людей в отряде: {strategy.squad.people}, агентов: {strategy.squad.agents}.
+              {strategy.squad.headcount?.need === 0 && ' План состава выполнен.'}
             </p>
             {strategy.squad.missingRoles === null ? (
               <p className="sans muted">Роли по Белбину ни у кого не заполнены.</p>

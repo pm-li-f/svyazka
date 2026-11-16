@@ -1,0 +1,11 @@
+vision: Окупаемость без новых раундов
+cycle: executing
+target: paying
+weather: {stage: performing, note: Спорим по делу и быстро договариваемся, at: 2026-09-15}
+camps:
+  - {id: base, name: База, phase: done}
+  - {id: mvp, name: MVP, phase: done, note: Пройден. Уроки записаны в журнал.}
+  - {id: beta, name: Бета-релиз, phase: done, note: Пройден на неделю раньше плана.}
+  - {id: paying, name: Первые платящие, phase: current, note: Четыре перехода из шести позади. Идём по графику.}
+  - {id: breakeven, name: Окупаемость, phase: idea, note: "Маршрут набросан, считаем юнит-экономику."}
+headcount: {target: 6, by: 2027-06-01}

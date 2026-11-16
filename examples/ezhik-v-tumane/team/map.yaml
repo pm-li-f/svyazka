@@ -1,0 +1,10 @@
+vision: Найти, за что нам заплатят
+cycle: planning
+target: problem
+weather: {stage: norming, note: "Договорились, как спорим о гипотезах", at: 2026-10-26}
+camps:
+  - {id: base, name: Идея, phase: done, note: Три страницы и два разговора.}
+  - {id: problem, name: Подтверждённая проблема, phase: current, note: "Десять интервью, в которых боль называют сами."}
+  - {id: prototype, name: Прототип в руках у пяти компаний, phase: planned, note: "Маршрут зависит от того, что найдём в тумане."}
+  - {id: first-money, name: Первые деньги, phase: planned}
+  - {id: pmf, name: "Продукт, без которого не могут", phase: idea}

@@ -39,6 +39,8 @@ jobs:
           node bin/sv.mjs sheet anya --dir "$RUNNER_TEMP/game" --no-color
           node bin/sv.mjs map --dir "$RUNNER_TEMP/game" --no-color
           node bin/sv.mjs map --dir examples/demo --today 2026-11-13 --no-color
+          node bin/sv.mjs map --dir examples/this-is-fine --today 2026-11-13 --no-color
+          node bin/sv.mjs signals --dir examples/kak-po-maslu --today 2026-11-13 --no-color
           node bin/sv.mjs turn end --dir "$RUNNER_TEMP/game"
           git -C "$RUNNER_TEMP/game" log --format=%s
       - name: web

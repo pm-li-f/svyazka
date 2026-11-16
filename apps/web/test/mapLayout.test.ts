@@ -3,9 +3,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { loadGame } from '@svyazka/core';
 import { mapView } from '@svyazka/engine';
-import { type Anchor, type Box, placeLabels, pointBox, taskBox } from '../src/screens/mapLayout';
+import { type Anchor, type Box, labelsFor, pointBox, pointText, SQUAD_LABEL, taskBox, taskHead } from '../src/screens/mapLayout';
 
-const demo = resolve(dirname(fileURLToPath(import.meta.url)), '../../../examples/demo');
+const examples = resolve(dirname(fileURLToPath(import.meta.url)), '../../../examples');
+const NAMES = ['demo', 'kak-po-maslu', 'this-is-fine', 'ezhik-v-tumane', 'agenty-razberutsya', 'svezhaya-krov'];
 
 function boxOf(x: number, y: number, size: { width: number; height: number }, anchor: Anchor): Box {
   const gap = anchor === 'center' ? 0 : 1.3;
@@ -17,12 +18,12 @@ const hits = (a: Box, b: Box) =>
   a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height;
 
 describe('подписи на карте', () => {
-  for (const today of ['2026-11-13', '2026-12-20']) {
-    it(`не пересекаются и не выходят за край (${today})`, () => {
-      const view = mapView(loadGame(demo), today);
-      const taskLabels = Object.fromEntries(view.tasks.map((t) => [t.id, { head: `ПЕРЕВАЛ · день 100`, lint: t.lint[0] ?? null }]));
-      const pointLabels = Object.fromEntries(view.route.map((p) => [p.id, `лагерь 9 · ${p.name}`]));
-      const labels = placeLabels({ view, taskLabels, pointLabels, squadLabel: 'отряд здесь' });
+  for (const [name, today] of [...NAMES.map((n) => [n, '2026-11-13']), ['demo', '2026-12-20']] as [string, string][]) {
+    it(`не пересекаются и не выходят за край (${name}, ${today})`, () => {
+      const view = mapView(loadGame(resolve(examples, name)), today);
+      const taskLabels = Object.fromEntries(view.tasks.map((t) => [t.id, { head: taskHead(t), lint: t.lint[0] ?? null }]));
+      const pointLabels = Object.fromEntries(view.route.map((p) => [p.id, pointText(p)]));
+      const labels = labelsFor(view);
 
       const boxes: { name: string; box: Box }[] = [
         ...view.tasks.map((t) => {
@@ -33,7 +34,7 @@ describe('подписи на карте', () => {
           const at = labels.points[p.id]!;
           return { name: p.id, box: boxOf(at.x, at.y, pointBox(pointLabels[p.id]!), at.anchor) };
         }),
-        { name: 'squad', box: boxOf(labels.squad.x, labels.squad.y, pointBox('отряд здесь'), labels.squad.anchor) },
+        { name: 'squad', box: boxOf(labels.squad.x, labels.squad.y, pointBox(SQUAD_LABEL), labels.squad.anchor) },
       ];
       for (const a of boxes) {
         expect(a.box.left, a.name).toBeGreaterThanOrEqual(0);

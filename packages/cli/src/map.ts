@@ -74,13 +74,18 @@ export function renderMap(game: Game, today: string, p: Paint = plain): string {
     { t: t.id, c: p.bold },
     t.status === 'blocked' ? { t: 'стоит', c: p.red } : t.days === null ? '—' : `день ${Math.max(0, t.days) + 1}`,
     `ведёт ${t.leads.join(', ') || 'никто'} · отвечает ${t.accountable ?? 'никто'}`,
-    { t: t.lint.join('; '), c: p.yellow },
+    {
+      t: [...t.lint, ...(t.probes.length ? [`разведок ${t.probes.length}, с выводом ${t.probes.filter((x) => x.outcome !== null).length}`] : [])].join('; '),
+      c: t.lint.length ? p.yellow : p.dim,
+    },
   ]);
 
   const squad = plan.squad;
   const composition = [
     squad.headcount
-      ? `людей ${squad.people} → ${squad.headcount.target} к ${ruDate(squad.headcount.by)}, агентов ${squad.agents}`
+      ? squad.headcount.need === 0
+        ? `людей ${squad.people}, план состава выполнен, агентов ${squad.agents}`
+        : `людей ${squad.people} → ${squad.headcount.target} к ${ruDate(squad.headcount.by)}, агентов ${squad.agents}`
       : `людей ${squad.people}, агентов ${squad.agents}`,
     squad.missingRoles === null
       ? 'роли по Белбину ни у кого не заполнены'

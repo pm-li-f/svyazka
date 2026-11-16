@@ -1,0 +1,11 @@
+vision: Выйти в ноль до конца денег
+cycle: executing
+target: beta
+weather: {stage: storming, note: Никто ни с кем не разговаривает, at: 2026-09-28}
+camps:
+  - {id: base, name: База, phase: done}
+  - {id: mvp, name: MVP, phase: done, note: Пройден. Разбор не проводили.}
+  - {id: beta, name: Бета-релиз, phase: current, note: Срок был 1 октября.}
+  - {id: paying, name: Первые платящие, phase: planned, note: Обещано инвесторам на декабрь.}
+  - {id: breakeven, name: Окупаемость, phase: idea}
+headcount: {target: 12, by: 2027-03-01}

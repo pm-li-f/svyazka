@@ -1,0 +1,37 @@
+# Настройки игры. Числа — прикидки, калибруются после пары недель игры.
+ttl_days: 14              # срок годности контекста о человеке
+attention:
+  cap: 10                 # потолок дневного бюджета
+  over_usual: 2           # не выше обычного плюс столько
+  window_days: 14         # за сколько дней считается «обычное»
+  cap_streak: 3           # столько ходов подряд на потолке — сигнал на тебя самого
+action_costs:
+  read-sheet: 1
+  resolve-signal: 1
+  one-on-one: 2
+  route-block: 3
+raci:
+  accountable_max: 2      # за сколько активных переходов можно отвечать одновременно
+signals:
+  load_crit: 85           # нагрузка, с которой единственный держатель навыка — критический сигнал
+labels:                   # подписи для людей
+  databases: Базы данных
+  hardware: Железо
+  architecture: Архитектура
+  interfaces: Интерфейсы
+  infrastructure: Инфраструктура
+  agents: Работа с агентами
+  verification: Проверка результата
+  data-metrics: Данные и метрики
+  systems-thinking: Системное мышление
+  process-vision: Видение процессов
+  product-taste: Продуктовый вкус
+  feedback: Обратная связь
+  read-sheet: прочитать лист
+  resolve-signal: разобрать сигнал
+  one-on-one: провести 1on1
+  route-block: поработать над маршрутом
+navigator:
+  provider: anthropic     # anthropic | moonshotai | alibaba
+  model: claude-sonnet-5-5
+  cloud_layers: [team, pair, me]   # в первой версии в облако может уходить всё
