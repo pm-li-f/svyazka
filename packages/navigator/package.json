@@ -1,0 +1,16 @@
+{
+  "name": "@svyazka/navigator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.105",
+    "@ai-sdk/moonshotai": "^3.0.93",
+    "@svyazka/core": "*",
+    "@svyazka/engine": "*",
+    "ai": "^7.0.173",
+    "zod": "^4.1.8"
+  }
+}

@@ -551,3 +551,11 @@ textarea { width: 100%; resize: vertical; font-family: var(--sans); font-size: 1
 .task-card > .between { align-items: baseline; }
 .task-card > .between > span { white-space: nowrap; }
 .task-card > .between > b { overflow-wrap: anywhere; }
+
+/* штурман */
+.panel-title.between { padding-top: 6px; padding-bottom: 6px; }
+.navigator-text { font-family: var(--sans); font-size: 14px; line-height: 1.55; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; max-width: 86ch; }
+.navigator-out:empty { display: none; }
+.prep { padding-top: 10px; margin-top: 4px; border-top: 1px dashed var(--line); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.cmdline input:disabled { cursor: not-allowed; }

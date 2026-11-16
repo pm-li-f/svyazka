@@ -41,6 +41,12 @@ jobs:
           node bin/sv.mjs map --dir examples/demo --today 2026-11-13 --no-color
           node bin/sv.mjs map --dir examples/this-is-fine --today 2026-11-13 --no-color
           node bin/sv.mjs signals --dir examples/kak-po-maslu --today 2026-11-13 --no-color
+          # Штурман без ключей: файл создаётся, ключи не найдены, вопрос объясняет, чего не хватает.
+          export SVYAZKA_KEYS="$RUNNER_TEMP/keys/keys.env"
+          node bin/sv.mjs keys init --no-color
+          node bin/sv.mjs keys --dir examples/demo --no-color
+          if node bin/sv.mjs ask "Что горит?" --dir examples/demo --today 2026-11-13 > ask.txt 2>&1; then echo "ask без ключа должен завершиться ошибкой"; exit 1; fi
+          grep -q "Нет ключа ANTHROPIC_API_KEY" ask.txt
           node bin/sv.mjs turn end --dir "$RUNNER_TEMP/game"
           git -C "$RUNNER_TEMP/game" log --format=%s
       - name: web

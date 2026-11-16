@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { GameLoadError, loadGame } from '../src/index.js';
+import { GameLoadError, loadGame, Navigator } from '../src/index.js';
 
 const demo = resolve(dirname(fileURLToPath(import.meta.url)), '../../../examples/demo');
 
@@ -32,7 +32,14 @@ describe('пример данных', () => {
     expect(g.tasks).toHaveLength(6);
     expect(g.people.filter((p) => p.is_lead).map((p) => p.id)).toEqual(['you']);
     expect(Object.keys(g.sheets).sort()).toEqual(['anya', 'lena', 'mark', 'timur', 'you']);
-    expect(g.config.navigator.cloud_layers).toEqual(['team', 'pair', 'me']);
+    expect(g.config.navigator.default).toBe('claude');
+    // Старая запись с одной моделью тоже читается.
+    expect(Navigator.parse({ provider: 'moonshotai', model: 'kimi-k2.6', cloud_layers: ['team'] })).toEqual({
+      default: 'kimi',
+      models: { kimi: { provider: 'moonshotai', model: 'kimi-k2.6', layers: ['team'] } },
+    });
+    expect(() => Navigator.parse({ default: 'gpt', models: {} })).toThrow(/такой модели нет/);
+    expect(g.config.navigator.models['kimi']).toEqual({ provider: 'moonshotai', model: 'kimi-k3', layers: ['team', 'pair', 'me'] });
   });
 
   it('содержит случаи, которые должен поймать линтер на следующем шаге', () => {

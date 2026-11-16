@@ -7,7 +7,7 @@
     "apps/*"
   ],
   "scripts": {
-    "typecheck": "tsc -p packages/core --noEmit && tsc -p packages/engine --noEmit && tsc -p packages/ops --noEmit && tsc -p packages/cli --noEmit && tsc -p apps/web",
+    "typecheck": "tsc -p packages/core --noEmit && tsc -p packages/engine --noEmit && tsc -p packages/ops --noEmit && tsc -p packages/navigator --noEmit && tsc -p packages/cli --noEmit && tsc -p apps/web",
     "test": "vitest run",
     "validate": "tsx packages/core/src/validate-cli.ts",
     "check": "npm run typecheck && npm test && npm run validate -- examples/demo examples/kak-po-maslu examples/this-is-fine examples/ezhik-v-tumane examples/agenty-razberutsya examples/svezhaya-krov",

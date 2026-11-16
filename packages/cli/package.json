@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "@svyazka/core": "*",
-    "@svyazka/engine": "*"
+    "@svyazka/engine": "*",
+    "@svyazka/navigator": "*"
   }
 }

@@ -29,7 +29,8 @@ labels:                   # подписи для людей
   resolve-signal: разобрать сигнал
   one-on-one: провести 1on1
   route-block: поработать над маршрутом
-navigator:
-  provider: anthropic     # anthropic | moonshotai | alibaba
-  model: claude-sonnet-5-5
-  cloud_layers: [team, pair, me]   # в первой версии в облако может уходить всё
+navigator:                # штурман: модели под короткими именами
+  default: claude         # какая отвечает, если не указать --model
+  models:                 # layers — какие слои можно отправлять этой модели
+    claude: {provider: anthropic, model: claude-sonnet-5-5, layers: [team, pair, me]}
+    kimi: {provider: moonshotai, model: kimi-k3, layers: [team, pair, me]}

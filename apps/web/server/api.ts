@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { GameLoadError, Layer, loadGame } from '@svyazka/core';
 import { sheetView, TurnError } from '@svyazka/engine';
+import { type Keys, NavigatorError, type OpenModel, readKeys, runAsk, runPrep } from '@svyazka/navigator';
 import * as ops from '@svyazka/ops';
 import { buildState } from './state.js';
 
@@ -8,6 +9,8 @@ export interface ApiOptions {
   dir: string;
   port: number;
   today: () => string;
+  /** Подмена модели и ключей штурмана для тестов. */
+  navigator?: { open?: OpenModel; keys?: () => Keys };
 }
 
 /** Ошибка запроса с текстом для человека. */
@@ -58,7 +61,10 @@ function guard(req: IncomingMessage, port: number): string | null {
 }
 
 /** Возвращает обработчик: true — запрос был к API и обработан, false — не к API. */
-export function createApi({ dir, port, today }: ApiOptions) {
+export function createApi({ dir, port, today, navigator }: ApiOptions) {
+  const keys = () => (navigator?.keys ?? readKeys)();
+  const nav = (model: unknown) => ({ dir, today: today(), modelName: str(model), keys: keys(), ...(navigator?.open ? { open: navigator.open } : {}) });
+
   return async function api(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const url = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
     if (!url.pathname.startsWith('/api/')) return false;
@@ -74,7 +80,7 @@ export function createApi({ dir, port, today }: ApiOptions) {
     try {
       let m: RegExpExecArray | null;
       if (route === 'GET /api/state') {
-        send(res, 200, buildState(dir, now));
+        send(res, 200, buildState(dir, now, keys()));
       } else if (req.method === 'GET' && (m = /^\/api\/sheet\/([a-z0-9-]+)$/.exec(url.pathname))) {
         const layer = Layer.safeParse(url.searchParams.get('layer') ?? 'me');
         if (!layer.success) throw new BadRequest('layer: team, pair или me.');
@@ -103,6 +109,14 @@ export function createApi({ dir, port, today }: ApiOptions) {
         if (!kind) throw new BadRequest('Не указано действие.');
         ops.act(dir, now, kind, str(body['target']), str(body['note']));
         send(res, 200, { ok: true });
+      } else if (route === 'POST /api/navigator/ask') {
+        const body = await readJson(req);
+        send(res, 200, await runAsk(str(body['question']) ?? '', nav(body['model'])));
+      } else if (route === 'POST /api/navigator/prep') {
+        const body = await readJson(req);
+        const id = str(body['id']);
+        if (!id) throw new BadRequest('Не указано, к встрече с кем готовиться.');
+        send(res, 200, await runPrep(id, nav(body['model'])));
       } else if (route === 'POST /api/decide') {
         const body = await readJson(req);
         ops.decide(dir, now, str(body['text']) ?? '');
@@ -111,7 +125,7 @@ export function createApi({ dir, port, today }: ApiOptions) {
         send(res, 404, { error: 'Нет такого адреса.' });
       }
     } catch (e) {
-      if (e instanceof BadRequest || e instanceof TurnError || e instanceof GameLoadError) {
+      if (e instanceof BadRequest || e instanceof TurnError || e instanceof GameLoadError || e instanceof NavigatorError) {
         send(res, 400, { error: e.message });
       } else if (e instanceof Error && /не найден/.test(e.message)) {
         send(res, 404, { error: e.message });

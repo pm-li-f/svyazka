@@ -199,6 +199,39 @@ export const Turn = z.strictObject({
 
 export const Layer = z.enum(['team', 'pair', 'me']);
 
+const Provider = z.enum(['anthropic', 'moonshotai', 'alibaba']);
+
+/** Модель штурмана: у какого поставщика, какая и какие слои ей можно отправлять. */
+export const NavigatorModel = z.strictObject({
+  provider: Provider,
+  model: z.string().min(1),
+  /** Слои, которые можно отправлять этой модели. Остального она не увидит. */
+  layers: z.array(Layer),
+  /** Другой адрес API: например, китайская площадка Moonshot. */
+  base_url: z.url().optional(),
+});
+
+const PROVIDER_ALIAS = { anthropic: 'claude', moonshotai: 'kimi', alibaba: 'qwen' } as const;
+
+/**
+ * Настройки штурмана: несколько моделей под короткими именами и та, что по умолчанию.
+ * Старая запись с одной моделью (`provider`, `model`, `cloud_layers`) тоже читается.
+ */
+export const Navigator = z.union([
+  z
+    .strictObject({ default: Id, models: z.record(Id, NavigatorModel) })
+    .refine((n) => n.default in n.models, { message: 'default: такой модели нет в models', path: ['default'] }),
+  z
+    .strictObject({ provider: Provider, model: z.string().min(1), cloud_layers: z.array(Layer) })
+    .transform((old) => ({
+      default: PROVIDER_ALIAS[old.provider] as string,
+      models: { [PROVIDER_ALIAS[old.provider]]: { provider: old.provider, model: old.model, layers: old.cloud_layers } } as Record<
+        string,
+        z.infer<typeof NavigatorModel>
+      >,
+    })),
+]);
+
 export const Config = z.strictObject({
   /** Срок годности контекста о человеке, в днях. */
   ttl_days: z.number().int().min(1),
@@ -234,12 +267,7 @@ export const Config = z.strictObject({
     ]),
   /** Названия для людей: id навыка или качества → подпись по-русски. Без подписи показывается id. */
   labels: z.record(z.string(), z.string()).default({}),
-  navigator: z.strictObject({
-    provider: z.enum(['anthropic', 'moonshotai', 'alibaba']),
-    model: z.string().min(1),
-    /** Какие слои можно отправлять облачной модели. В первой версии — все. */
-    cloud_layers: z.array(Layer),
-  }),
+  navigator: Navigator,
 });
 
 // ---------------------------------------------------------------- всё вместе
@@ -253,6 +281,7 @@ export type Journal = z.infer<typeof Journal>;
 export type Private = z.infer<typeof Private>;
 export type Turn = z.infer<typeof Turn>;
 export type Config = z.infer<typeof Config>;
+export type NavigatorModel = z.infer<typeof NavigatorModel>;
 export type Layer = z.infer<typeof Layer>;
 
 export interface Game {

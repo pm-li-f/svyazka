@@ -9,6 +9,7 @@
     "@fontsource/jetbrains-mono": "^5.0.0",
     "@svyazka/core": "*",
     "@svyazka/engine": "*",
+    "@svyazka/navigator": "*",
     "@svyazka/ops": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

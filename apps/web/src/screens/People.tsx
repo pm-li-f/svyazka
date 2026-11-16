@@ -1,3 +1,4 @@
+import { NavigatorLine } from '../Navigator';
 import type { StateView } from '../api';
 import { Attention, Cmd, days, DecisionInput, Panel, type Run, StartTurn } from '../ui';
 
@@ -150,6 +151,8 @@ export function People({ state, run }: { state: StateView; run: Run }) {
           </ul>
         </Panel>
       </div>
+
+      <NavigatorLine state={state} />
 
       {turn && !turn.closed && <DecisionInput run={run} />}
     </div>

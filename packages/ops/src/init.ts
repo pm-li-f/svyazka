@@ -48,10 +48,11 @@ labels:                   # подписи для людей: идентифик
   resolve-signal: разобрать сигнал
   one-on-one: провести 1on1
   route-block: поработать над маршрутом
-navigator:
-  provider: anthropic     # anthropic | moonshotai | alibaba
-  model: claude-sonnet-5-5
-  cloud_layers: [team, pair, me]   # какие слои можно отправлять облачной модели
+navigator:                # штурман: модели под короткими именами
+  default: claude         # какая отвечает, если не указать --model
+  models:                 # layers — какие слои можно отправлять этой модели
+    claude: {provider: anthropic, model: claude-sonnet-5-5, layers: [team, pair, me]}
+    kimi: {provider: moonshotai, model: kimi-k3, layers: [team, pair, me]}
 `;
 
 const README = `# Папка игры «Связка»
@@ -122,6 +123,8 @@ config.yaml           настройки и подписи
    \`\`\`
 
    Карту никто не рисует: \`sv map\` и экран «карта» собирают её из этих файлов.
+
+5. **Штурман.** Модели, которые отвечают на вопросы по этой папке, записаны в \`config.yaml\`, в разделе \`navigator\`. У каждой есть \`layers\`: какие слои ей можно отправлять. Ключи лежат отдельно: \`sv keys init\`.
 
 После правок проверь папку: \`sv roster\`. Если что-то не так, команда назовёт файл и поле.
 `;

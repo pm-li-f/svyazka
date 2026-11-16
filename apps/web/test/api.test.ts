@@ -4,7 +4,9 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { MockLanguageModelV4 } from 'ai/test';
 import { afterEach, describe, expect, it } from 'vitest';
+import type { OpenModel } from '@svyazka/navigator';
 import { createApi } from '../server/api';
 import { buildState } from '../server/state';
 
@@ -15,7 +17,7 @@ let server: Server | undefined;
 let temp: string | undefined;
 
 /** Поднимает API на свободном порту поверх копии примера. */
-async function start(): Promise<{ base: string; port: number; dir: string }> {
+async function start(navigator?: { open: OpenModel }): Promise<{ base: string; port: number; dir: string }> {
   temp = mkdtempSync(join(tmpdir(), 'svyazka-web-'));
   cpSync(demo, temp, { recursive: true });
   const dir = temp;
@@ -24,7 +26,8 @@ async function start(): Promise<{ base: string; port: number; dir: string }> {
   await new Promise<void>((r) => probe.listen(0, '127.0.0.1', r));
   const port = (probe.address() as AddressInfo).port;
   await new Promise((r) => probe.close(r));
-  const api = createApi({ dir, port, today: () => TODAY });
+  // Ключи в тестах подставные: настоящий файл ключей и окружение не читаются.
+  const api = createApi({ dir, port, today: () => TODAY, navigator: { keys: () => ({ ANTHROPIC_API_KEY: { value: 'sk-test', source: 'file' } }), ...navigator } });
   server = createServer((req, res) => {
     void api(req, res).then((handled) => {
       if (!handled) res.writeHead(404).end();
@@ -73,6 +76,49 @@ describe('состояние для экранов', () => {
     for (const s of ['Тяну, но без запаса', 'Просит дублёра', 'Не грузить новым', 'трение о сроках', 'Если взял']) {
       expect(text).not.toContain(s);
     }
+  });
+});
+
+const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined }, outputTokens: { total: 1, text: 1, reasoning: undefined } };
+const reply = (text: string) => ({ content: [{ type: 'text' as const, text }], finishReason: { unified: 'stop' as const, raw: undefined }, usage, warnings: [] });
+
+describe('штурман через API', () => {
+  it('состояние называет модели и есть ли для них ключ, но не сам ключ', async () => {
+    const { base } = await start();
+    const res = await fetch(`${base}/api/state`);
+    const text = await res.text();
+    const state = JSON.parse(text) as ReturnType<typeof buildState>;
+    expect(state.navigator.default).toBe('claude');
+    expect(state.navigator.models.map((m) => `${m.name}:${m.ready}`)).toEqual(['claude:true', 'kimi:false']);
+    expect(text).not.toContain('sk-test');
+  });
+
+  it('вопрос и заметки к 1on1 идут в выбранную модель', async () => {
+    const asked: string[] = [];
+    const { base } = await start({
+      open: (spec) => {
+        asked.push(spec.name);
+        return new MockLanguageModelV4({ doGenerate: reply(`Отвечает ${spec.name}.`) });
+      },
+    });
+    const ask = await post(base, '/api/navigator/ask', { question: 'Что горит?' });
+    expect(ask.status).toBe(200);
+    expect(await ask.json()).toMatchObject({ text: 'Отвечает claude.', model: { name: 'claude', layers: ['team', 'pair', 'me'] }, tools: [] });
+
+    const prep = await post(base, '/api/navigator/prep', { id: 'timur', model: 'kimi' });
+    expect(await prep.json()).toMatchObject({ text: 'Отвечает kimi.', model: { name: 'kimi', provider: 'moonshotai' } });
+    expect(asked).toEqual(['claude', 'kimi']);
+  });
+
+  it('без ключа, без вопроса и с чужой страницы штурман не отвечает', async () => {
+    const { base, port } = await start();
+    const noKey = await post(base, '/api/navigator/ask', { question: 'Что горит?', model: 'kimi' });
+    expect(noKey.status).toBe(400);
+    expect(((await noKey.json()) as { error: string }).error).toMatch(/Нет ключа MOONSHOT_API_KEY/);
+    expect((await post(base, '/api/navigator/prep', {})).status).toBe(400);
+    expect((await post(base, '/api/navigator/ask', { question: 'x', model: 'gpt' })).status).toBe(400);
+    const foreign = await post(base, '/api/navigator/ask', { question: 'Что горит?' }, { origin: `http://evil.example:${port}` });
+    expect(foreign.status).toBe(403);
   });
 });
 

@@ -1,8 +1,9 @@
 import type { Layer } from '@svyazka/core';
 import type { SheetView } from '@svyazka/engine';
+import type { Answer } from '@svyazka/navigator';
 import type { StateView } from '../server/state';
 
-export type { Layer, SheetView, StateView };
+export type { Answer, Layer, SheetView, StateView };
 
 async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -23,5 +24,7 @@ export const api = {
   endTurn: () => request<{ ok: true; commit: string | null }>('POST', '/api/turn/end'),
   oneOnOne: (id: string, note: string) => request<{ ok: true }>('POST', '/api/1on1', { id, note }),
   act: (kind: string, target?: string, note?: string) => request<{ ok: true }>('POST', '/api/act', { kind, target, note }),
+  ask: (question: string, model?: string) => request<Answer>('POST', '/api/navigator/ask', { question, model }),
+  prep: (id: string, model?: string) => request<Answer>('POST', '/api/navigator/prep', { id, model }),
   decide: (text: string) => request<{ ok: true }>('POST', '/api/decide', { text }),
 };

@@ -1,4 +1,5 @@
-import { loadGame, type GameMap, type Turn } from '@svyazka/core';
+import { loadGame, type GameMap, type Layer, type Turn } from '@svyazka/core';
+import { type Keys, listModels, readKeys } from '@svyazka/navigator';
 import {
   attentionSplit,
   budgetLimit,
@@ -40,9 +41,11 @@ export interface StateView {
   strategy: Strategy;
   /** Куда уходило внимание: данные о самом руководителе. */
   attention: AttentionSplit;
+  /** Модели штурмана. `ready` — ключ найден; сам ключ на страницу не уходит. */
+  navigator: { default: string; models: { name: string; provider: string; model: string; layers: Layer[]; keyVar: string; ready: boolean }[] };
 }
 
-export function buildState(dir: string, today: string): StateView {
+export function buildState(dir: string, today: string, keys: Keys = readKeys()): StateView {
   const game = loadGame(dir);
   const rows = roster(game, today);
   const terrain = mapView(game, today);
@@ -72,5 +75,16 @@ export function buildState(dir: string, today: string): StateView {
     terrain,
     strategy: strategy(game, terrain),
     attention: attentionSplit(game, today),
+    navigator: {
+      default: game.config.navigator.default,
+      models: listModels(game.config).map((m) => ({
+        name: m.name,
+        provider: m.provider,
+        model: m.model,
+        layers: m.layers,
+        keyVar: m.keyVar,
+        ready: keys[m.keyVar] !== undefined,
+      })),
+    },
   };
 }

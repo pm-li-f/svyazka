@@ -2,10 +2,12 @@ import { resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { GameLoadError, Layer, loadGame } from '@svyazka/core';
+import { NavigatorError } from '@svyazka/navigator';
 import { InitError, localToday } from '@svyazka/ops';
 import { askInit, parsePerson, runInit } from './init.js';
 import { makePaint } from './format.js';
 import { renderMap } from './map.js';
+import { askCmd, keysInit, keysStatus, prepCmd } from './navigator.js';
 import { renderRaci, renderRoster, renderSheet, renderSignals, renderSkills } from './render.js';
 import { act, budgetHint, chargeSheetRead, decide, oneOnOne, turnEnd, turnShow, turnStart } from './turn.js';
 
@@ -31,6 +33,13 @@ const HELP = `sv — «Связка» в терминале
   sv decide "<текст>"       строка в журнал решений
   sv turn end               закрыть ход: что не успел, коммит
 
+Штурман
+  sv ask "<вопрос>"         спросить штурмана: он сам возьмёт данные игры и ответит
+  sv prep <id>              заметки к 1on1 с человеком
+  sv keys                   какие ключи моделей найдены
+  sv keys init              создать файл ключей
+  sv keys --check           проверить ключи пробным запросом
+
 Параметры
   --dir <путь>              папка игры (по умолчанию $SVYAZKA_DIR или текущая)
   --today <дата>            на какую дату считать, ГГГГ-ММ-ДД (по умолчанию сегодня)
@@ -39,6 +48,7 @@ const HELP = `sv — «Связка» в терминале
   --layer <слой>            для sheet: до какого слоя показывать — team, pair или me
   --peek                    для sheet: посмотреть, не списывая внимание
   --no-commit               для turn end: не делать коммит
+  --model <имя>             для ask и prep: какая модель отвечает (имена — в config.yaml)
   --no-color                без цвета
 
 Для sv init без вопросов
@@ -70,6 +80,8 @@ const { values, positionals } = parseArgs({
     person: { type: 'string', multiple: true },
     camp: { type: 'string' },
     'no-git': { type: 'boolean' },
+    model: { type: 'string' },
+    check: { type: 'boolean' },
     help: { type: 'boolean', short: 'h' },
   },
 });
@@ -88,6 +100,11 @@ if (!layer.success) fail('--layer ждёт team, pair или me');
 
 const dir = resolve(values.dir ?? process.env['SVYAZKA_DIR'] ?? '.');
 const paint = makePaint(!values['no-color'] && !process.env['NO_COLOR'] && process.stdout.isTTY === true);
+
+/** Пока модель думает, в терминале должно быть видно, что команда не зависла. В вывод команды строка не попадает. */
+function thinking(): void {
+  if (process.stderr.isTTY) console.error(paint.dim('штурман думает…'));
+}
 
 async function askBudget(): Promise<number | undefined> {
   if (values.budget !== undefined) {
@@ -161,6 +178,23 @@ try {
       if (!arg) fail('sv act <действие> [цель]: укажи действие');
       console.log(act(dir, today, arg, arg2, values.note, paint));
       break;
+    case 'ask': {
+      const question = positionals.slice(1).join(' ');
+      if (!question.trim()) fail('sv ask "<вопрос>": напиши, что спросить у штурмана');
+      thinking();
+      console.log(await askCmd(question, { dir, today, modelName: values.model }, paint));
+      break;
+    }
+    case 'prep':
+      if (!arg) fail('sv prep <id>: укажи, к встрече с кем готовиться');
+      thinking();
+      console.log(await prepCmd(arg, { dir, today, modelName: values.model }, paint));
+      break;
+    case 'keys':
+      if (arg === 'init') console.log(keysInit(paint));
+      else if (!arg) console.log(await keysStatus(dir, values.check === true, paint));
+      else fail('sv keys [init] [--check]');
+      break;
     case 'decide':
       if (!arg) fail('sv decide "<текст>": укажи, что решил и почему');
       console.log(decide(dir, today, positionals.slice(1).join(' '), paint));
@@ -169,7 +203,7 @@ try {
       fail(`неизвестная команда «${command}»\n\n${HELP}`);
   }
 } catch (e) {
-  if (e instanceof GameLoadError || e instanceof InitError) fail(e.message, 1);
+  if (e instanceof GameLoadError || e instanceof InitError || e instanceof NavigatorError) fail(e.message, 1);
   if (e instanceof Error) fail(e.message, 1);
   throw e;
 }

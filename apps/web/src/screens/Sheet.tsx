@@ -1,3 +1,4 @@
+import { NavigatorPrep } from '../Navigator';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { api, type Layer, type SheetView, type StateView } from '../api';
 import { Cmd, Dots, LAYER_NAME, type Run, TERRAIN } from '../ui';
@@ -230,6 +231,7 @@ export function Sheet({ state, id, version, run }: { state: StateView; id: strin
               ) : (
                 <p className="hint">Чтобы записать встречу, начни ход.</p>
               )}
+              <NavigatorPrep state={state} id={id} />
             </Block>
           )}
 

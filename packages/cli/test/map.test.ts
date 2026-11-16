@@ -54,3 +54,22 @@ describe('sv map', () => {
     expect(out).toContain('открытых переходов нет');
   });
 });
+
+describe('ответ штурмана в терминале', () => {
+  it('подписан: модель, ушедшие слои, что она смотрела', async () => {
+    const { renderAnswer } = await import('../src/index.js');
+    const out = renderAnswer({
+      text: 'Первым — с Тимуром.',
+      model: { name: 'kimi', provider: 'moonshotai', model: 'kimi-k3', layers: ['team'] },
+      tools: ['roster', 'sheet(timur)'],
+      tokens: { input: 1200, output: 80 },
+    });
+    expect(out.split('\n')).toEqual([
+      'штурман · kimi · moonshotai/kimi-k3 · ушли слои: team',
+      '',
+      'Первым — с Тимуром.',
+      '',
+      'смотрел: roster, sheet(timur) · токены: 1200 → 80',
+    ]);
+  });
+});
