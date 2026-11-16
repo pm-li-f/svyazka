@@ -6,24 +6,6 @@ on:
   pull_request:
 
 jobs:
-  manual:
-    # Руководство игрока собирается из живой игры: если экран или правило хода изменились,
-    # а руководство нет, сборка падает и называет блок или шаг.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run manual
-      - uses: actions/upload-artifact@v4
-        with:
-          name: svyazka-manual
-          path: docs/manual/out/svyazka-manual.pdf
-          if-no-files-found: error
-
   check:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}

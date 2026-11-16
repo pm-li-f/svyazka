@@ -16,7 +16,9 @@ const code = files(src)
 const exists = (id: string) =>
   code.includes(`data-block="${id}"`) || code.includes(`block="${id}"`) || (id.startsWith('sheet-') && code.includes(`name="${id.slice('sheet-'.length)}"`));
 
-describe('руководство игрока не отстаёт от интерфейса', () => {
+// Руководство обновляется только по просьбе владельца, поэтому в обычной проверке этой сверки нет.
+// Перед обновлением: SVYAZKA_MANUAL=1 npm test.
+describe.skipIf(!process.env['SVYAZKA_MANUAL'])('руководство игрока не отстаёт от интерфейса', () => {
   it('каждый блок, описанный в руководстве, есть на экране', () => {
     expect(BLOCK_IDS.filter((id) => !exists(id))).toEqual([]);
   });

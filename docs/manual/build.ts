@@ -431,6 +431,10 @@ async function build(): Promise<void> {
       margin: { top: '11mm', bottom: '13mm', left: '12mm', right: '12mm' },
     });
     console.log(`готово: ${join(out, 'svyazka-manual.pdf')}`);
+    if (process.argv.includes('--publish')) {
+      cpSync(join(out, 'svyazka-manual.pdf'), join(root, 'docs/svyazka-manual.pdf'));
+      console.log(`опубликовано: ${join(root, 'docs/svyazka-manual.pdf')}`);
+    }
   } finally {
     await browser.close();
   }
